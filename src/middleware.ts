@@ -36,14 +36,14 @@ export function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   if (q === token) {
-    res.cookies.set("evs_reg", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: true,
-      path: "/",
-      maxAge: 60 * 60 * 12, // 12 horas (ajuste se quiser)
-    });
-  }
+  res.cookies.set("evs_reg", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 12,
+  });
+}
 
   return res;
 }

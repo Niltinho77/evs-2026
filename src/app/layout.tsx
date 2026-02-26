@@ -1,41 +1,43 @@
 import "./globals.css";
-import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "EVS 2026 — Comando",
-  description: "Cadastro de Soldados EV 2026",
+export const metadata = {
+  title: "EVS 2026",
+  description: "Cadastro e controle de EVs",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
-      <body className="min-h-screen bg-zinc-950 text-zinc-100">
-        <div className="mx-auto max-w-6xl px-4 py-4">
-          <header className="flex items-center justify-between py-4">
-            <div>
-              <div className="text-lg font-semibold">EVS 2026</div>
-              <div className="text-xs text-zinc-400">
-                Esquadrão de Comando
+    <html lang="pt-br">
+      <body>
+        <div className="min-h-screen">
+          {/* Topbar */}
+          <header className="sticky top-0 z-40 border-b border-white/10 bg-black/40 backdrop-blur-xl">
+            <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="grid h-9 w-9 place-items-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+                  <span className="text-sm font-extrabold tracking-tight">
+                    EV
+                  </span>
+                </div>
+                <div className="leading-tight">
+                  <div className="text-sm font-semibold">EVS 2026</div>
+                  <div className="text-[11px] text-white/60">Esquadrão de Comando</div>
+                </div>
               </div>
-            </div>
 
-            <a
-              href="/soldiers/new"
-              className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 active:scale-[0.99]"
-            >
-              + Novo EV
-            </a>
+              <a
+                href="/soldiers/new"
+                className="rounded-2xl bg-[rgb(var(--accent))] px-4 py-2 text-xs font-bold text-black shadow-[var(--shadow)]"
+              >
+                + Novo
+              </a>
+            </div>
           </header>
 
-          <main>{children}</main>
+          {/* Page */}
+          <main className="mx-auto max-w-3xl px-4 pb-20 pt-4">{children}</main>
 
-          <footer className="mt-10 text-center text-xs text-zinc-500">
-            Sistema Interno — Uso restrito
-          </footer>
+          
         </div>
       </body>
     </html>

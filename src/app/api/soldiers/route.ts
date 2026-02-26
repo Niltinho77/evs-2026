@@ -6,26 +6,46 @@ import { saveUploadedImage } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
+type SoldierListItem = {
+  id: string;
+  fullName: string;
+  warName: string;
+  cpf: string;
+  idt: string;
+  platoon: "P1" | "P2" | "P3" | null;
+  squad: string;
+  photoUrl: string | null;
+  _count: { fatds: number; fos: number };
+};
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get("q") ?? "").trim();
+  const qRaw = (searchParams.get("q") ?? "").trim();
 
-  const where = q
-    ? {
-        OR: [
-          { fullName: { contains: q, mode: "insensitive" as const } },
-          { warName: { contains: q, mode: "insensitive" as const } },
-          { cpf: { contains: normalizeCPF(q) } },
-          { idt: { contains: onlyDigits(q) } },
-        ],
-      }
-    : {};
+  const digits = onlyDigits(qRaw);
+  const cpfNorm = normalizeCPF(qRaw);
 
-  const soldiers = await prisma.soldier.findMany({
+  const where =
+    qRaw.length > 0
+      ? {
+          OR: [
+            { fullName: { contains: qRaw } },
+            { warName: { contains: qRaw } },
+            ...(digits.length ? [{ idt: { contains: digits } }] : []),
+            ...(digits.length ? [{ cpf: { contains: digits } }] : []),
+            ...(cpfNorm.length === 11 ? [{ cpf: { equals: cpfNorm } }] : []),
+          ],
+        }
+      : {};
+
+  const soldiers = (await prisma.soldier.findMany({
     where,
     orderBy: { fullName: "asc" },
-    include: { fatds: true, fos: true },
-  });
+    include: {
+      _count: { select: { fatds: true, fos: true } },
+    },
+    take: 50,
+  })) as unknown as SoldierListItem[];
 
   return NextResponse.json({ soldiers });
 }
