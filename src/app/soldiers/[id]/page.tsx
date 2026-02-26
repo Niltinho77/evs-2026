@@ -276,23 +276,51 @@ export default function SoldierDetailsPage() {
           <div className="text-sm text-zinc-400">Nenhum FO registrado.</div>
         ) : (
           <div className="space-y-2">
-            {soldier.fos.map((fo) => (
-              <div key={fo.id} className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold">{fo.type === "POSITIVO" ? "FO +" : "FO -"}</div>
-                    <div className="text-xs text-zinc-400">{new Date(fo.date).toLocaleDateString()}</div>
-                  </div>
-                  <button
-                    onClick={() => deleteFO(fo.id)}
-                    className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-2 py-1 text-[11px] font-semibold text-zinc-200"
-                  >
-                    Excluir
-                  </button>
-                </div>
-                <div className="mt-2 whitespace-pre-wrap text-sm text-zinc-200">{fo.text}</div>
-              </div>
-            ))}
+            {soldier.fos.map((fo) => {
+  const isNeg = fo.type === "NEGATIVO";
+
+  return (
+    <div
+      key={fo.id}
+      className={`rounded-xl border p-3 ${
+        isNeg
+          ? "border-red-900/50 bg-red-950/40"
+          : "border-zinc-800 bg-zinc-950"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div
+            className={`text-sm font-semibold ${
+              isNeg ? "text-red-300" : "text-emerald-300"
+            }`}
+          >
+            {isNeg ? "FO -" : "FO +"}
+          </div>
+
+          <div className="text-xs text-zinc-400">
+            {new Date(fo.date).toLocaleDateString()}
+          </div>
+        </div>
+
+        <button
+          onClick={() => deleteFO(fo.id)}
+          className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-2 py-1 text-[11px] font-semibold text-zinc-200"
+        >
+          Excluir
+        </button>
+      </div>
+
+      <div
+        className={`mt-2 whitespace-pre-wrap text-sm ${
+          isNeg ? "text-red-200" : "text-zinc-200"
+        }`}
+      >
+        {fo.text}
+      </div>
+    </div>
+  );
+})}
           </div>
         )}
       </Section>

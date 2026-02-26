@@ -13,8 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Topbar */}
           <header className="sticky top-0 z-40 border-b border-white/10 bg-black/40 backdrop-blur-xl">
             <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+              <a href="/" className="flex items-center gap-3 transition hover:opacity-80">                <div className="grid h-9 w-9 place-items-center rounded-2xl bg-white/5 ring-1 ring-white/10">
                   <span className="text-sm font-extrabold tracking-tight">
                     EV
                   </span>
@@ -23,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <div className="text-sm font-semibold">EVS 2026</div>
                   <div className="text-[11px] text-white/60">Esquadrão de Comando</div>
                 </div>
-              </div>
+              </a>
 
               <a
                 href="/soldiers/new"
