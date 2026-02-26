@@ -1,74 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_PREFIXES = ["/soldiers", "/api/soldiers"];
-
-function isProtected(pathname: string) {
-  return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+function isPublicAsset(pathname: string) {
+  return (
+    pathname.startsWith("/_next/") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml"
+  );
 }
 
-function isPublicRoute(pathname: string) {
-  // permitir home e rota de imagens
-  if (pathname === "/") return true;
-  if (pathname.startsWith("/api/uploads/")) return true;
+function okToken(req: NextRequest): boolean {
+  const token = process.env.REGISTRATION_TOKEN || "";
+  if (!token) return false;
 
-  // liberar acesso ao formulário novo
-  if (pathname === "/soldiers/new") return true;
-
-  // se você quiser liberar também /soldiers (lista) durante janela, deixe true
-  // caso contrário, comente
-  if (pathname === "/soldiers") return true;
-
-  // API POST (criar) será controlada abaixo também
-  return false;
+  const q = req.nextUrl.searchParams.get("t") || "";
+  const c = req.cookies.get("evs_reg")?.value || "";
+  return q === token || c === token;
 }
 
 export function middleware(req: NextRequest) {
-  const { pathname, searchParams } = req.nextUrl;
+  const { pathname } = req.nextUrl;
 
-  // deixa rotas públicas passarem e protege o resto do /soldiers e /api/soldiers
-  const shouldProtect = isProtected(pathname) && !isPublicRoute(pathname);
+  // nunca bloqueia assets do Next
+  if (isPublicAsset(pathname)) return NextResponse.next();
 
-  // também protege o POST de criação
-  const isCreateApi = pathname === "/api/soldiers" && req.method === "POST";
-
-  if (!shouldProtect && !isCreateApi) return NextResponse.next();
-
+  // valida token
   const token = process.env.REGISTRATION_TOKEN || "";
-  const deadline = process.env.REGISTRATION_DEADLINE || "";
-
-  // se token não existir, fecha tudo
-  if (!token) return NextResponse.json({ error: "Acesso encerrado." }, { status: 403 });
-
-  // deadline
-  if (deadline) {
-    const end = new Date(deadline).getTime();
-    if (!Number.isNaN(end) && Date.now() > end) {
-      return NextResponse.json({ error: "Prazo encerrado." }, { status: 403 });
-    }
+  if (!token || !okToken(req)) {
+    // Se você quiser redirecionar pra uma página simples, pode trocar por redirect.
+    return NextResponse.json({ error: "Acesso bloqueado." }, { status: 403 });
   }
 
-  const tQuery = searchParams.get("t") || "";
-  const tCookie = req.cookies.get("evs_reg")?.value || "";
-  const ok = tQuery === token || tCookie === token;
-
-  if (!ok) {
-    return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
-  }
-
-  // se veio pela query, grava cookie para próximas requisições
+  // se entrou com ?t=token, grava cookie pra facilitar uso no celular
+  const q = req.nextUrl.searchParams.get("t") || "";
   const res = NextResponse.next();
-  if (tQuery === token) {
+
+  if (q === token) {
     res.cookies.set("evs_reg", token, {
       httpOnly: true,
       sameSite: "lax",
       secure: true,
       path: "/",
-      maxAge: 60 * 60 * 24 * 30, // 30 dias
+      maxAge: 60 * 60 * 12, // 12 horas (ajuste se quiser)
     });
   }
+
   return res;
 }
 
 export const config = {
-  matcher: ["/soldiers/:path*", "/api/soldiers/:path*"],
+  matcher: ["/((?!_next|favicon.ico|robots.txt|sitemap.xml).*)"],
 };
