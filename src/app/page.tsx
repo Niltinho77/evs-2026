@@ -223,7 +223,6 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="text-xs text-white/50">
-              Dica: a busca já filtra em tempo real. Exporta com os filtros aplicados.
             </div>
           )}
 
@@ -375,9 +374,7 @@ export default function HomePage() {
           >
             Baixar CSV
           </a>
-          <div className="mt-2 text-center text-[11px] text-white/50">
-            Dica: no celular, role a lista de campos (o botão fica sempre visível).
-          </div>
+          
         </div>
       </div>
     </div>
