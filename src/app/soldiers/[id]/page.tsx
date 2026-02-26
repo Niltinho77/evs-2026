@@ -62,6 +62,16 @@ type Soldier = {
 
   notesPositive?: string | null;
   notesNegative?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+
+  healthIssues?: string | null;
+
+  hasGirlfriend: boolean;
+  girlfriendAddress?: string | null;
+
+  usedDrugs: boolean;
+  drugsDetails?: string | null;
 
   fatds: FATD[];
   fos: FO[];
@@ -360,6 +370,18 @@ export default function SoldierDetailsPage() {
         <KV label="Título de eleitor" value={soldier.voterTitle} />
         <KV label="Atleta" value={soldier.isAthlete ? "Sim" : "Não"} />
         <KV label="Atividade física" value={soldier.physicalActivity} />
+      </Section>
+
+      <Section title="Social / Saúde / Relacionamento">
+        <KV label="Facebook" value={soldier.facebook} />
+        <KV label="Instagram" value={soldier.instagram} />
+        <KV label="Problemas de saúde" value={soldier.healthIssues} />
+        <KV label="Namorada" value={soldier.hasGirlfriend ? "Sim" : "Não"} />
+        {soldier.hasGirlfriend ? (
+          <KV label="Endereço da namorada (ref.)" value={soldier.girlfriendAddress} />
+        ) : null}
+        <KV label="Já usou drogas" value={soldier.usedDrugs ? "Sim" : "Não"} />
+        {soldier.usedDrugs ? <KV label="Quais?" value={soldier.drugsDetails} /> : null}
       </Section>
 
       <Section title="Fatos observados (campos livres)">

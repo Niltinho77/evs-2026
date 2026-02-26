@@ -45,7 +45,14 @@ type ExportField =
   | "religion"
   | "voterTitle"
   | "isAthlete"
-  | "physicalActivity";
+  | "physicalActivity"
+  | "facebook"
+  | "instagram"
+  | "healthIssues"
+  | "hasGirlfriend"
+  | "girlfriendAddress"
+  | "usedDrugs"
+  | "drugsDetails";
 
 const REQUIRED_EXPORT: ExportField[] = ["warName", "fullName"];
 
@@ -81,6 +88,16 @@ const EXPORT_FIELDS: { key: ExportField; label: string }[] = [
 
   { key: "isAthlete", label: "Atleta" },
   { key: "physicalActivity", label: "Atividade Física" },
+  { key: "facebook", label: "Facebook" },
+  { key: "instagram", label: "Instagram" },
+
+  { key: "healthIssues", label: "Problemas de saúde" },
+
+  { key: "hasGirlfriend", label: "Namorada" },
+  { key: "girlfriendAddress", label: "Endereço da namorada (ref.)" },
+
+  { key: "usedDrugs", label: "Já usou drogas" },
+  { key: "drugsDetails", label: "Quais drogas" },
 ];
 
 function platoonLabel(p?: SoldierListItem["platoon"]): string {

@@ -86,6 +86,17 @@ model Soldier {
   notesPositive    String?    @db.Text
   notesNegative    String?    @db.Text
 
+  facebook          String?
+  instagram         String?
+
+  healthIssues      String?   @db.Text
+
+  hasGirlfriend     Boolean   @default(false)
+  girlfriendAddress String?   @db.Text
+
+  usedDrugs         Boolean   @default(false)
+  drugsDetails      String?   @db.Text
+
   fatds            FATD[]
   fos   FO[]
 

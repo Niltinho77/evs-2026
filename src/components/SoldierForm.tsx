@@ -62,6 +62,16 @@ export type FormState = {
 
   notesPositive: string;
   notesNegative: string;
+  facebook: string;
+  instagram: string;
+
+  healthIssues: string;
+
+  hasGirlfriend: boolean;
+  girlfriendAddress: string;
+
+  usedDrugs: boolean;
+  drugsDetails: string;
 };
 
 type Initial = Partial<
@@ -142,6 +152,16 @@ function normalizeInitial(initial?: Initial): FormState {
 
     notesPositive: initial?.notesPositive ?? "",
     notesNegative: initial?.notesNegative ?? "",
+    facebook: (initial?.facebook as string) ?? "",
+    instagram: (initial?.instagram as string) ?? "",
+
+    healthIssues: (initial?.healthIssues as string) ?? "",
+
+    hasGirlfriend: Boolean(initial?.hasGirlfriend ?? false),
+    girlfriendAddress: (initial?.girlfriendAddress as string) ?? "",
+
+    usedDrugs: Boolean(initial?.usedDrugs ?? false),
+    drugsDetails: (initial?.drugsDetails as string) ?? "",
   };
 }
 
@@ -362,6 +382,53 @@ export default function SoldierForm({ mode, initial }: Props) {
             placeholder={athleteDisabled ? "Ative 'Atleta' para preencher" : "Ex: corrida, futebol"}
           />
         </Grid>
+      </Section>
+
+            <Section title="Social / Saúde / Relacionamento">
+        <Grid>
+          <Input label="Facebook" value={form.facebook} onChange={(v) => setField("facebook", v)} />
+          <Input label="Instagram" value={form.instagram} onChange={(v) => setField("instagram", v)} />
+        </Grid>
+
+        <Textarea
+          label="Problemas de saúde"
+          value={form.healthIssues}
+          onChange={(v) => setField("healthIssues", v)}
+        />
+
+        <Grid>
+          <Checkbox
+            label="Namorada"
+            checked={form.hasGirlfriend}
+            onChange={(v) => setField("hasGirlfriend", v)}
+          />
+          <div />
+        </Grid>
+
+        {form.hasGirlfriend && (
+          <Textarea
+            label="Endereço da namorada (ponto de referência)"
+            value={form.girlfriendAddress}
+            onChange={(v) => setField("girlfriendAddress", v)}
+          />
+        )}
+
+        <Grid>
+          <Checkbox
+            label="Já usou drogas"
+            checked={form.usedDrugs}
+            onChange={(v) => setField("usedDrugs", v)}
+          />
+          <div />
+        </Grid>
+
+        {form.usedDrugs && (
+          <Textarea
+            label="Quais?"
+            value={form.drugsDetails}
+            onChange={(v) => setField("drugsDetails", v)}
+          />
+        )}
       </Section>
 
       <Section title="Histórico / Observações">

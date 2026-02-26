@@ -1,38 +1,62 @@
+// src/app/api/export/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
 const FIELD_MAP = {
+  // obrigatórios
   warName: "Nome de Guerra",
   fullName: "Nome Completo",
 
+  // docs / identificação
   cpf: "CPF",
   idt: "IDT",
   platoon: "Pelotão",
+
+  // contato
   phone: "Telefone",
   emergencyPhone: "Telefone Emergência",
+  address: "Endereço",
   naturalidade: "Naturalidade",
+
+  // familia
   motherName: "Nome da Mãe",
   fatherName: "Nome do Pai",
-  address: "Endereço",
 
+  // flags
   laranjeira: "Laranjeira",
 
+  // CNH
   hasLicense: "Possui CNH",
   licenseCategory: "Categoria CNH",
 
+  // saúde / sangue
   bloodType: "Tipo Sanguíneo",
+  healthIssues: "Problemas de saúde",
 
+  // banco
   bank: "Banco",
   agency: "Agência",
   account: "Conta",
 
+  // outros
   religion: "Religião",
   voterTitle: "Título de Eleitor",
-
   isAthlete: "Atleta",
   physicalActivity: "Atividade Física",
+
+  // redes sociais
+  facebook: "Facebook",
+  instagram: "Instagram",
+
+  // relacionamento
+  hasGirlfriend: "Namorada",
+  girlfriendAddress: "Endereço da namorada (ref.)",
+
+  // drogas
+  usedDrugs: "Já usou drogas",
+  drugsDetails: "Quais drogas",
 } as const;
 
 type AllowedField = keyof typeof FIELD_MAP;
@@ -89,11 +113,19 @@ export async function GET(req: Request) {
 
   const header = fields.map((f) => csvEscape(FIELD_MAP[f])).join(",");
 
+  const BOOLEAN_FIELDS: AllowedField[] = [
+    "hasLicense",
+    "laranjeira",
+    "isAthlete",
+    "hasGirlfriend",
+    "usedDrugs",
+  ];
+
   const lines = rows.map((r) =>
     fields
       .map((f) => {
         const value = (r as any)[f];
-        if (f === "hasLicense" || f === "laranjeira" || f === "isAthlete") return csvEscape(yesNo(value));
+        if (BOOLEAN_FIELDS.includes(f)) return csvEscape(yesNo(value));
         return csvEscape(value ?? "");
       })
       .join(",")

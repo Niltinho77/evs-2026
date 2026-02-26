@@ -73,9 +73,19 @@ export async function PUT(
 
   const notesPositive = String(form.get("notesPositive") ?? "").trim() || null;
   const notesNegative = String(form.get("notesNegative") ?? "").trim() || null;
+    const facebook = String(form.get("facebook") ?? "").trim() || null;
+  const instagram = String(form.get("instagram") ?? "").trim() || null;
+
+  const healthIssues = String(form.get("healthIssues") ?? "").trim() || null;
+
+  const hasGirlfriend = String(form.get("hasGirlfriend") ?? "false") === "true";
+  const girlfriendAddress = String(form.get("girlfriendAddress") ?? "").trim() || null;
+
+  const usedDrugs = String(form.get("usedDrugs") ?? "false") === "true";
+  const drugsDetails = String(form.get("drugsDetails") ?? "").trim() || null;
 
   const cpf = normalizeCPF(cpfRaw);
-  const idt = onlyDigits(idtRaw).slice(0, 9);
+  const idt = onlyDigits(idtRaw).slice(0, 10);
 
   if (!fullName || !warName) {
     return NextResponse.json(
@@ -137,6 +147,16 @@ export async function PUT(
 
       notesPositive,
       notesNegative,
+      facebook,
+      instagram,
+
+      healthIssues,
+
+      hasGirlfriend,
+      girlfriendAddress,
+
+      usedDrugs,
+      drugsDetails,
 
       ...(newPhotoUrl ? { photoUrl: newPhotoUrl } : {}),
     },
