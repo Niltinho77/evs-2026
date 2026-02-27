@@ -73,6 +73,69 @@ type Soldier = {
   usedDrugs: boolean;
   drugsDetails?: string | null;
 
+    // ===== NOVOS CAMPOS (perfil social / família / saúde / etc.) =====
+  tattoos?: string | null;
+  childrenCount?: number | null;
+
+  hasBeenArrested: boolean;
+  arrestDetails?: string | null;
+
+  livesWithParents: boolean;
+  livesWithWhom?: string | null;
+
+  lostCloseFamily: boolean;
+  lostWhoCause?: string | null;
+
+  livedAway: boolean;
+  livedAwayWhere?: string | null;
+
+  householdCount?: number | null;
+
+  familyIncome?: any; // Decimal (pode vir string/obj) -> vamos converter na exibição
+  helpsFamily: boolean;
+  helpsFamilyAmount?: any; // Decimal
+
+  hasSiblings: boolean;
+  siblingsCount?: number | null;
+
+  smoker: boolean;
+  alcoholUse: boolean;
+
+  policeProblems: boolean;
+  policeProblemsDetails?: string | null;
+
+  accidentSequelae: boolean;
+  accidentSequelaeDetails?: string | null;
+
+  hadSurgeries: boolean;
+  surgeriesDetails?: string | null;
+
+  hasSTDs: boolean;
+  stdDetails?: string | null;
+
+  hasSeizuresFainting: boolean;
+  mentalSymptoms: boolean;
+  mentalSymptomsDetails?: string | null;
+
+  suddenFear: boolean;
+
+  irritabilityAnxietyEtc: boolean;
+  irritabilityAnxietyEtcDetails?: string | null;
+
+  hasMilitaryRelative: boolean;
+  militaryRelativeDetails?: string | null;
+
+  relationshipFather?: string | null;
+  relationshipMother?: string | null;
+  relationshipSiblings?: string | null;
+
+  workedBeforeEB: boolean;
+  workSignedCard: boolean;
+  workSalary?: any; // Decimal
+  workDetails?: string | null;
+
+  volunteeredToServe: boolean;
+
   fatds: FATD[];
   fos: FO[];
 };
@@ -110,6 +173,18 @@ const PUNISH_LABEL: Record<string, string> = {
   DETENCAO: "Detenção",
   CADEIA: "Cadeia",
 };
+
+function moneyBR(v: any): string {
+  if (v === null || v === undefined || v === "") return "—";
+  const n = Number(String(v).replace(",", "."));
+  if (!Number.isFinite(n)) return String(v);
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function numOrDash(v: any): string {
+  if (v === null || v === undefined || v === "") return "—";
+  return String(v);
+}
 
 export default function SoldierDetailsPage() {
   const params = useParams();
@@ -384,6 +459,81 @@ export default function SoldierDetailsPage() {
         {soldier.usedDrugs ? <KV label="Quais?" value={soldier.drugsDetails} /> : null}
       </Section>
 
+      <Section title="Perfil / Família">
+  <KV label="Tatuagens" value={soldier.tattoos} />
+  <KV label="Qtd. filhos" value={numOrDash(soldier.childrenCount)} />
+
+  <KV label="Mora com os pais" value={soldier.livesWithParents ? "Sim" : "Não"} />
+  {soldier.livesWithParents ? <KV label="Mora com quem" value={soldier.livesWithWhom} /> : null}
+
+  <KV label="Tem irmãos" value={soldier.hasSiblings ? "Sim" : "Não"} />
+  {soldier.hasSiblings ? <KV label="Qtd. irmãos" value={numOrDash(soldier.siblingsCount)} /> : null}
+
+  <KV label="Perdeu familiar próximo" value={soldier.lostCloseFamily ? "Sim" : "Não"} />
+  {soldier.lostCloseFamily ? <KV label="Quem / causa" value={soldier.lostWhoCause} /> : null}
+
+  <KV label="Já morou fora" value={soldier.livedAway ? "Sim" : "Não"} />
+  {soldier.livedAway ? <KV label="Onde morou fora" value={soldier.livedAwayWhere} /> : null}
+
+  <KV label="Qtd. pessoas na casa" value={numOrDash(soldier.householdCount)} />
+</Section>
+
+<Section title="Renda / Trabalho">
+  <KV label="Renda familiar" value={moneyBR(soldier.familyIncome)} />
+  <KV label="Ajuda a família" value={soldier.helpsFamily ? "Sim" : "Não"} />
+  {soldier.helpsFamily ? <KV label="Valor que ajuda" value={moneyBR(soldier.helpsFamilyAmount)} /> : null}
+
+  <KV label="Trabalhou antes do EB" value={soldier.workedBeforeEB ? "Sim" : "Não"} />
+  <KV label="Carteira assinada" value={soldier.workSignedCard ? "Sim" : "Não"} />
+  <KV label="Salário" value={moneyBR(soldier.workSalary)} />
+  <KV label="Detalhes (trabalho)" value={soldier.workDetails} />
+
+  <KV label="Se voluntariou para servir" value={soldier.volunteeredToServe ? "Sim" : "Não"} />
+</Section>
+
+<Section title="Hábitos / Ocorrências / Saúde (detalhado)">
+  <KV label="Fumante" value={soldier.smoker ? "Sim" : "Não"} />
+  <KV label="Consome álcool" value={soldier.alcoholUse ? "Sim" : "Não"} />
+
+  <KV label="Já foi preso" value={soldier.hasBeenArrested ? "Sim" : "Não"} />
+  {soldier.hasBeenArrested ? <KV label="Detalhes da prisão" value={soldier.arrestDetails} /> : null}
+
+  <KV label="Problemas com a polícia" value={soldier.policeProblems ? "Sim" : "Não"} />
+  {soldier.policeProblems ? <KV label="Detalhes (polícia)" value={soldier.policeProblemsDetails} /> : null}
+
+  <KV label="Sequelas de acidente" value={soldier.accidentSequelae ? "Sim" : "Não"} />
+  {soldier.accidentSequelae ? <KV label="Detalhes (sequelas)" value={soldier.accidentSequelaeDetails} /> : null}
+
+  <KV label="Já fez cirurgias" value={soldier.hadSurgeries ? "Sim" : "Não"} />
+  {soldier.hadSurgeries ? <KV label="Detalhes (cirurgias)" value={soldier.surgeriesDetails} /> : null}
+
+  <KV label="Possui IST/DST" value={soldier.hasSTDs ? "Sim" : "Não"} />
+  {soldier.hasSTDs ? <KV label="Detalhes (IST/DST)" value={soldier.stdDetails} /> : null}
+
+  <KV label="Convulsões/desmaios" value={soldier.hasSeizuresFainting ? "Sim" : "Não"} />
+
+  <KV label="Sintomas mentais" value={soldier.mentalSymptoms ? "Sim" : "Não"} />
+  {soldier.mentalSymptoms ? <KV label="Detalhes (sintomas mentais)" value={soldier.mentalSymptomsDetails} /> : null}
+
+  <KV label="Medo súbito" value={soldier.suddenFear ? "Sim" : "Não"} />
+
+  <KV label="Irritabilidade/ansiedade etc." value={soldier.irritabilityAnxietyEtc ? "Sim" : "Não"} />
+  {soldier.irritabilityAnxietyEtc ? (
+    <KV label="Detalhes (ansiedade etc.)" value={soldier.irritabilityAnxietyEtcDetails} />
+  ) : null}
+
+  <KV label="Parente militar" value={soldier.hasMilitaryRelative ? "Sim" : "Não"} />
+  {soldier.hasMilitaryRelative ? (
+    <KV label="Detalhes (parente militar)" value={soldier.militaryRelativeDetails} />
+  ) : null}
+</Section>
+
+<Section title="Relações familiares">
+  <KV label="Relação com o pai" value={soldier.relationshipFather} />
+  <KV label="Relação com a mãe" value={soldier.relationshipMother} />
+  <KV label="Relação com irmãos" value={soldier.relationshipSiblings} />
+</Section>
+
       <Section title="Fatos observados (campos livres)">
         <KV label="Positivos (campo)" value={soldier.notesPositive} />
         <KV label="Negativos (campo)" value={soldier.notesNegative} />
@@ -496,8 +646,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function KV({ label, value }: { label: string; value?: string | null }) {
-  const v = value?.trim?.() ? value : "—";
+function KV({ label, value }: { label: string; value?: any }) {
+    const v =
+    value === null || value === undefined || value === "" ? "—" : String(value).trim() || "—";
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
       <div className="text-[11px] text-zinc-400">{label}</div>

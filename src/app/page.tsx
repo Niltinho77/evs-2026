@@ -24,41 +24,132 @@ const PLATOON_OPTIONS: { value: Platoon; label: string }[] = [
 ];
 
 type ExportField =
+  // sistema
+  | "id"
+  | "createdAt"
+  | "updatedAt"
+  | "squad"
+  | "photoUrl"
+  | "platoon"
+
+  // obrigatórios
   | "warName"
   | "fullName"
+
+  // docs / identificação
   | "cpf"
   | "idt"
-  | "platoon"
+
+  // contato
   | "phone"
   | "emergencyPhone"
+  | "address"
   | "naturalidade"
+
+  // família
   | "motherName"
   | "fatherName"
-  | "address"
+
+  // flags
   | "laranjeira"
+
+  // histórico
+  | "familyHistory"
+  | "professionalExp"
+  | "education"
+
+  // CNH
   | "hasLicense"
   | "licenseCategory"
+
+  // saúde / sangue
   | "bloodType"
+  | "healthIssues"
+
+  // banco
   | "bank"
   | "agency"
   | "account"
+
+  // outros
   | "religion"
   | "voterTitle"
+
+  // atleta
   | "isAthlete"
   | "physicalActivity"
+
+  // observações
+  | "notesPositive"
+  | "notesNegative"
+
+  // redes sociais
   | "facebook"
   | "instagram"
-  | "healthIssues"
+
+  // relacionamento
   | "hasGirlfriend"
   | "girlfriendAddress"
+
+  // drogas
   | "usedDrugs"
-  | "drugsDetails";
+  | "drugsDetails"
+
+  // ===== NOVOS CAMPOS =====
+  | "tattoos"
+  | "childrenCount"
+  | "hasBeenArrested"
+  | "arrestDetails"
+  | "livesWithParents"
+  | "livesWithWhom"
+  | "lostCloseFamily"
+  | "lostWhoCause"
+  | "livedAway"
+  | "livedAwayWhere"
+  | "householdCount"
+  | "familyIncome"
+  | "helpsFamily"
+  | "helpsFamilyAmount"
+  | "hasSiblings"
+  | "siblingsCount"
+  | "smoker"
+  | "alcoholUse"
+  | "policeProblems"
+  | "policeProblemsDetails"
+  | "accidentSequelae"
+  | "accidentSequelaeDetails"
+  | "hadSurgeries"
+  | "surgeriesDetails"
+  | "hasSTDs"
+  | "stdDetails"
+  | "hasSeizuresFainting"
+  | "mentalSymptoms"
+  | "mentalSymptomsDetails"
+  | "suddenFear"
+  | "irritabilityAnxietyEtc"
+  | "irritabilityAnxietyEtcDetails"
+  | "hasMilitaryRelative"
+  | "militaryRelativeDetails"
+  | "relationshipFather"
+  | "relationshipMother"
+  | "relationshipSiblings"
+  | "workedBeforeEB"
+  | "workSignedCard"
+  | "workSalary"
+  | "workDetails"
+  | "volunteeredToServe";
 
 const REQUIRED_EXPORT: ExportField[] = ["warName", "fullName"];
 
 const EXPORT_FIELDS: { key: ExportField; label: string }[] = [
   { key: "warName", label: "Nome de Guerra (obrigatório)" },
   { key: "fullName", label: "Nome Completo (obrigatório)" },
+
+  { key: "id", label: "ID" },
+  { key: "createdAt", label: "Criado em" },
+  { key: "updatedAt", label: "Atualizado em" },
+  { key: "squad", label: "Esquadrão" },
+  { key: "photoUrl", label: "Foto (URL)" },
 
   { key: "cpf", label: "CPF" },
   { key: "idt", label: "IDT" },
@@ -98,6 +189,74 @@ const EXPORT_FIELDS: { key: ExportField; label: string }[] = [
 
   { key: "usedDrugs", label: "Já usou drogas" },
   { key: "drugsDetails", label: "Quais drogas" },
+    { key: "familyHistory", label: "Histórico familiar" },
+  { key: "professionalExp", label: "Experiência profissional" },
+  { key: "education", label: "Escolaridade" },
+
+  { key: "notesPositive", label: "Fatos positivos (campo)" },
+  { key: "notesNegative", label: "Fatos negativos (campo)" },
+    { key: "tattoos", label: "Tatuagens" },
+  { key: "childrenCount", label: "Qtd. filhos" },
+
+  { key: "hasBeenArrested", label: "Já foi preso" },
+  { key: "arrestDetails", label: "Detalhes da prisão" },
+
+  { key: "livesWithParents", label: "Mora com os pais" },
+  { key: "livesWithWhom", label: "Mora com quem" },
+
+  { key: "lostCloseFamily", label: "Perdeu familiar próximo" },
+  { key: "lostWhoCause", label: "Quem / causa" },
+
+  { key: "livedAway", label: "Já morou fora" },
+  { key: "livedAwayWhere", label: "Onde morou fora" },
+
+  { key: "householdCount", label: "Qtd. pessoas na casa" },
+
+  { key: "familyIncome", label: "Renda familiar (R$)" },
+  { key: "helpsFamily", label: "Ajuda a família" },
+  { key: "helpsFamilyAmount", label: "Valor que ajuda (R$)" },
+
+  { key: "hasSiblings", label: "Tem irmãos" },
+  { key: "siblingsCount", label: "Qtd. irmãos" },
+
+  { key: "smoker", label: "Fumante" },
+  { key: "alcoholUse", label: "Consome álcool" },
+
+  { key: "policeProblems", label: "Problemas com a polícia" },
+  { key: "policeProblemsDetails", label: "Detalhes (polícia)" },
+
+  { key: "accidentSequelae", label: "Sequelas de acidente" },
+  { key: "accidentSequelaeDetails", label: "Detalhes (sequelas)" },
+
+  { key: "hadSurgeries", label: "Já fez cirurgias" },
+  { key: "surgeriesDetails", label: "Detalhes (cirurgias)" },
+
+  { key: "hasSTDs", label: "Possui IST/DST" },
+  { key: "stdDetails", label: "Detalhes (IST/DST)" },
+
+  { key: "hasSeizuresFainting", label: "Convulsões/desmaios" },
+
+  { key: "mentalSymptoms", label: "Sintomas mentais" },
+  { key: "mentalSymptomsDetails", label: "Detalhes (sintomas mentais)" },
+
+  { key: "suddenFear", label: "Medo súbito" },
+
+  { key: "irritabilityAnxietyEtc", label: "Irritabilidade/ansiedade etc." },
+  { key: "irritabilityAnxietyEtcDetails", label: "Detalhes (ansiedade etc.)" },
+
+  { key: "hasMilitaryRelative", label: "Parente militar" },
+  { key: "militaryRelativeDetails", label: "Detalhes (parente militar)" },
+
+  { key: "relationshipFather", label: "Relação com o pai" },
+  { key: "relationshipMother", label: "Relação com a mãe" },
+  { key: "relationshipSiblings", label: "Relação com irmãos" },
+
+  { key: "workedBeforeEB", label: "Trabalhou antes do EB" },
+  { key: "workSignedCard", label: "Carteira assinada" },
+  { key: "workSalary", label: "Salário (R$)" },
+  { key: "workDetails", label: "Detalhes (trabalho)" },
+
+  { key: "volunteeredToServe", label: "Se voluntariou para servir" },
 ];
 
 function platoonLabel(p?: SoldierListItem["platoon"]): string {
@@ -128,6 +287,8 @@ export default function HomePage() {
     base.cpf = true;
     base.idt = true;
     base.platoon = true;
+        base.squad = true;
+    base.phone = true;
     return base;
   });
 
@@ -138,9 +299,10 @@ export default function HomePage() {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`/api/soldiers?q=${encodeURIComponent(q)}`, {
-          cache: "no-store",
-        });
+        const res = await fetch(
+  `/api/soldiers?q=${encodeURIComponent(q)}&platoon=${encodeURIComponent(platoon)}`,
+  { cache: "no-store" }
+);
         const data = (await res.json()) as { soldiers?: SoldierListItem[]; error?: string };
         if (!res.ok) throw new Error(data?.error || "Erro ao buscar soldados.");
         const list = Array.isArray(data.soldiers) ? data.soldiers : [];
@@ -157,7 +319,7 @@ export default function HomePage() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [q]);
+  }, [q, platoon ]);
 
   const filtered = useMemo(() => {
     if (!platoon) return soldiers;

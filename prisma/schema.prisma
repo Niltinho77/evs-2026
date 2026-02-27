@@ -42,62 +42,126 @@ enum Platoon {
 }
 
 model Soldier {
-  id               String     @id @default(cuid())
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  squad            String     @default("Comando")
-  platoon          Platoon?
+  squad   String   @default("Comando")
+  platoon Platoon?
 
-  photoUrl         String?
+  photoUrl String?
 
-  fullName         String
-  warName          String
-  cpf              String     @unique
-  idt              String     @unique
+  fullName String
+  warName  String
+  cpf      String @unique
+  idt      String @unique
 
-  phone            String
-  emergencyPhone   String
-  naturalidade     String
-  motherName       String
-  fatherName       String
-  address          String
+  phone          String
+  emergencyPhone String
+  naturalidade   String
+  motherName     String
+  fatherName     String
+  address        String
 
-  laranjeira       Boolean    @default(false)
-  familyHistory    String?    @db.Text
-  professionalExp  String?    @db.Text
-  education        String?
+  laranjeira      Boolean @default(false)
+  familyHistory   String? @db.Text
+  professionalExp String? @db.Text
+  education       String?
 
-  hasLicense       Boolean    @default(false)
-  licenseCategory  String?
+  hasLicense      Boolean @default(false)
+  licenseCategory String?
 
-  bloodType        BloodType?
+  bloodType BloodType?
 
-  bank             Bank?
-  agency           String?
-  account          String?
+  bank    Bank?
+  agency  String?
+  account String?
 
-  religion         String?
-  voterTitle       String?
+  religion   String?
+  voterTitle String?
 
-  isAthlete        Boolean    @default(false)
+  isAthlete        Boolean @default(false)
   physicalActivity String?
 
-  notesPositive    String?    @db.Text
-  notesNegative    String?    @db.Text
+  notesPositive String? @db.Text
+  notesNegative String? @db.Text
 
-  facebook          String?
-  instagram         String?
+  // ========= NOVOS CAMPOS (redes/relacionamento/saúde/drogas) =========
+  facebook  String?
+  instagram String?
 
-  healthIssues      String?   @db.Text
+  healthIssues String? @db.Text
 
-  hasGirlfriend     Boolean   @default(false)
-  girlfriendAddress String?   @db.Text
+  hasGirlfriend     Boolean @default(false)
+  girlfriendAddress String? @db.Text
 
-  usedDrugs         Boolean   @default(false)
-  drugsDetails      String?   @db.Text
+  usedDrugs    Boolean @default(false)
+  drugsDetails String? @db.Text
 
-  fatds            FATD[]
+  // ========= PERFIL SOCIAL / FAMÍLIA =========
+  tattoos       String? @db.Text
+  childrenCount Int?
+
+  hasBeenArrested Boolean @default(false)
+  arrestDetails   String? @db.Text
+
+  livesWithParents Boolean @default(false)
+  livesWithWhom    String? @db.Text
+
+  lostCloseFamily Boolean @default(false)
+  lostWhoCause    String? @db.Text
+
+  livedAway      Boolean @default(false)
+  livedAwayWhere String? @db.Text
+
+  householdCount Int? // quantos moram na casa
+
+  familyIncome      Decimal? @db.Decimal(10, 2)
+  helpsFamily       Boolean  @default(false)
+  helpsFamilyAmount Decimal? @db.Decimal(10, 2)
+
+  hasSiblings   Boolean @default(false)
+  siblingsCount Int?
+
+  smoker     Boolean @default(false)
+  alcoholUse Boolean @default(false)
+
+  policeProblems        Boolean @default(false)
+  policeProblemsDetails String? @db.Text
+
+  accidentSequelae        Boolean @default(false)
+  accidentSequelaeDetails String? @db.Text
+
+  hadSurgeries     Boolean @default(false)
+  surgeriesDetails String? @db.Text
+
+  hasSTDs    Boolean @default(false)
+  stdDetails String? @db.Text
+
+  hasSeizuresFainting   Boolean @default(false)
+  mentalSymptoms        Boolean @default(false)
+  mentalSymptomsDetails String? @db.Text
+
+  suddenFear Boolean @default(false)
+
+  irritabilityAnxietyEtc        Boolean @default(false)
+  irritabilityAnxietyEtcDetails String? @db.Text
+
+  hasMilitaryRelative     Boolean @default(false)
+  militaryRelativeDetails String? @db.Text
+
+  relationshipFather   String? @db.Text
+  relationshipMother   String? @db.Text
+  relationshipSiblings String? @db.Text
+
+  workedBeforeEB Boolean  @default(false)
+  workSignedCard Boolean  @default(false)
+  workSalary     Decimal? @db.Decimal(10, 2)
+  workDetails    String?  @db.Text
+
+  volunteeredToServe Boolean @default(false)
+
+  fatds FATD[]
   fos   FO[]
 
   @@index([fullName])
@@ -106,14 +170,14 @@ model Soldier {
 }
 
 model FATD {
-  id         String      @id @default(cuid())
-  createdAt  DateTime    @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
-  soldierId  String
-  soldier    Soldier     @relation(fields: [soldierId], references: [id], onDelete: Cascade)
+  soldierId String
+  soldier   Soldier @relation(fields: [soldierId], references: [id], onDelete: Cascade)
 
   date       DateTime
-  reason     String      @db.Text
+  reason     String     @db.Text
   punishment Punishment
 
   @@index([soldierId])
@@ -130,11 +194,11 @@ model FO {
   createdAt DateTime @default(now())
   date      DateTime @default(now())
 
-  type      FoType
-  text      String   @db.Text
+  type FoType
+  text String @db.Text
 
   soldierId String
-  soldier   Soldier  @relation(fields: [soldierId], references: [id], onDelete: Cascade)
+  soldier   Soldier @relation(fields: [soldierId], references: [id], onDelete: Cascade)
 
   @@index([soldierId])
   @@index([date])
