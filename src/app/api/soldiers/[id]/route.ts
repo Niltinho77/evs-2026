@@ -242,6 +242,14 @@ export async function PUT(
 
   const volunteeredToServe = bool(form, "volunteeredToServe");
 
+  const identidadeMilitar = optStr(form, "identidadeMilitar");
+  const alturaRaw = optStr(form, "altura");
+  const altura = alturaRaw ? parseInt(alturaRaw, 10) || null : null;
+  const cabelo = optStr(form, "cabelo");
+  const cutis = optStr(form, "cutis");
+  const corOlhos = optStr(form, "corOlhos");
+  const doadorOrgaos = bool(form, "doadorOrgaos");
+
   // FOTO
   let newPhotoUrl: string | null = null;
   if (photo && photo instanceof File && photo.size > 0) {
@@ -363,6 +371,13 @@ export async function PUT(
         workDetails,
 
         volunteeredToServe,
+
+        identidadeMilitar,
+        altura,
+        cabelo,
+        cutis,
+        corOlhos,
+        doadorOrgaos,
 
         ...(newPhotoUrl ? { photoUrl: newPhotoUrl } : {}),
       },

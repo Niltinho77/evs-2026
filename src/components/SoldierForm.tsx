@@ -140,6 +140,13 @@ export type FormState = {
   workDetails: string;
 
   volunteeredToServe: boolean;
+
+  identidadeMilitar: string;
+  altura: string;
+  cabelo: string;
+  cutis: string;
+  corOlhos: string;
+  doadorOrgaos: boolean;
 };
 
 type Initial = Partial<
@@ -181,6 +188,33 @@ const PLATOONS: { value: Platoon; label: string }[] = [
   { value: "P1", label: "1º Pelotão" },
   { value: "P2", label: "2º Pelotão" },
   { value: "P3", label: "3º Pelotão" },
+];
+
+const CABELO_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "—" },
+  { value: "Preto", label: "Preto" },
+  { value: "Castanho", label: "Castanho" },
+  { value: "Loiro", label: "Loiro" },
+  { value: "Ruivo", label: "Ruivo" },
+  { value: "Grisalho", label: "Grisalho" },
+  { value: "Branco", label: "Branco" },
+];
+
+const CUTIS_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "—" },
+  { value: "Claro", label: "Claro" },
+  { value: "Médio", label: "Médio" },
+  { value: "Escuro", label: "Escuro" },
+];
+
+const OLHOS_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "—" },
+  { value: "Castanho", label: "Castanho" },
+  { value: "Preto", label: "Preto" },
+  { value: "Verde", label: "Verde" },
+  { value: "Azul", label: "Azul" },
+  { value: "Avelã", label: "Avelã" },
+  { value: "Cinza", label: "Cinza" },
 ];
 
 function normalizeInitial(initial?: Initial): FormState {
@@ -296,6 +330,13 @@ function normalizeInitial(initial?: Initial): FormState {
     workDetails: initial?.workDetails ?? "",
 
     volunteeredToServe: Boolean(initial?.volunteeredToServe ?? false),
+
+    identidadeMilitar: initial?.identidadeMilitar ?? "",
+    altura: initial?.altura != null ? String(initial.altura) : "",
+    cabelo: initial?.cabelo ?? "",
+    cutis: initial?.cutis ?? "",
+    corOlhos: initial?.corOlhos ?? "",
+    doadorOrgaos: Boolean(initial?.doadorOrgaos ?? false),
   };
 }
 
@@ -442,6 +483,50 @@ export default function SoldierForm({ mode, initial }: Props) {
           />
 
           <Input
+            label="Identidade Militar (IM)"
+            value={form.identidadeMilitar}
+            onChange={(v) => setField("identidadeMilitar", v)}
+            inputMode="numeric"
+            autoComplete="off"
+          />
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-zinc-400">Altura</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={3}
+                value={form.altura}
+                onChange={(e) => setField("altura", onlyDigits(e.target.value).slice(0, 3))}
+                className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-100 outline-none focus:border-zinc-600"
+              />
+              <span className="shrink-0 text-sm text-zinc-400">cm</span>
+            </div>
+          </div>
+
+          <Select
+            label="Cabelo"
+            value={form.cabelo}
+            options={CABELO_OPTIONS}
+            onChange={(v) => setField("cabelo", v)}
+          />
+
+          <Select
+            label="Cútis"
+            value={form.cutis}
+            options={CUTIS_OPTIONS}
+            onChange={(v) => setField("cutis", v)}
+          />
+
+          <Select
+            label="Cor dos olhos"
+            value={form.corOlhos}
+            options={OLHOS_OPTIONS}
+            onChange={(v) => setField("corOlhos", v)}
+          />
+
+          <Input
             label="Telefone"
             value={formatPhoneBR(form.phone)}
             onChange={(v) => setField("phone", formatPhoneBR(v))}
@@ -480,6 +565,12 @@ export default function SoldierForm({ mode, initial }: Props) {
             value={form.address}
             onChange={(v) => setField("address", v)}
             autoCapitalize="sentences"
+          />
+
+          <Checkbox
+            label="Doador de órgãos"
+            checked={form.doadorOrgaos}
+            onChange={(v) => setField("doadorOrgaos", v)}
           />
         </Grid>
       </Section>

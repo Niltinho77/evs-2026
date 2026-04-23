@@ -53,8 +53,8 @@ model Soldier {
 
   fullName String
   warName  String
-  cpf      String @unique
-  idt      String @unique
+  cpf      String
+  idt      String
 
   phone          String
   emergencyPhone String
@@ -160,6 +160,14 @@ model Soldier {
   workDetails    String?  @db.Text
 
   volunteeredToServe Boolean @default(false)
+
+  // ========= IDENTIFICAÇÃO FÍSICA =========
+  identidadeMilitar String?
+  altura            Int?     // em centímetros
+  cabelo            String?
+  cutis             String?
+  corOlhos          String?
+  doadorOrgaos      Boolean?
 
   fatds FATD[]
   fos   FO[]

@@ -139,6 +139,14 @@ const FIELD_MAP = {
   workDetails: "Detalhes (trabalho)",
 
   volunteeredToServe: "Se voluntariou para servir",
+
+  // ======= IDENTIFICAÇÃO FÍSICA =======
+  identidadeMilitar: "Identidade Militar (IM)",
+  altura: "Altura (cm)",
+  cabelo: "Cabelo",
+  cutis: "Cútis",
+  corOlhos: "Cor dos Olhos",
+  doadorOrgaos: "Doador de Órgãos",
 } as const;
 
 type AllowedField = keyof typeof FIELD_MAP;
@@ -181,6 +189,7 @@ const BOOLEAN_FIELDS: AllowedField[] = [
   "workedBeforeEB",
   "workSignedCard",
   "volunteeredToServe",
+  "doadorOrgaos",
 ];
 
 export async function GET(req: Request) {
