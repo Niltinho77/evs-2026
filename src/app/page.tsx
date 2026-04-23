@@ -137,7 +137,15 @@ type ExportField =
   | "workSignedCard"
   | "workSalary"
   | "workDetails"
-  | "volunteeredToServe";
+  | "volunteeredToServe"
+
+  // ===== IDENTIFICAÇÃO FÍSICA =====
+  | "identidadeMilitar"
+  | "altura"
+  | "cabelo"
+  | "cutis"
+  | "corOlhos"
+  | "doadorOrgaos";
 
 const REQUIRED_EXPORT: ExportField[] = ["warName", "fullName"];
 
@@ -257,6 +265,14 @@ const EXPORT_FIELDS: { key: ExportField; label: string }[] = [
   { key: "workDetails", label: "Detalhes (trabalho)" },
 
   { key: "volunteeredToServe", label: "Se voluntariou para servir" },
+
+  // ===== IDENTIFICAÇÃO FÍSICA =====
+  { key: "identidadeMilitar", label: "Identidade Militar (IM)" },
+  { key: "altura", label: "Altura (cm)" },
+  { key: "cabelo", label: "Cabelo" },
+  { key: "cutis", label: "Cútis" },
+  { key: "corOlhos", label: "Cor dos Olhos" },
+  { key: "doadorOrgaos", label: "Doador de Órgãos" },
 ];
 
 function platoonLabel(p?: SoldierListItem["platoon"]): string {
