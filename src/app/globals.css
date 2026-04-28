@@ -1,37 +1,262 @@
 @import "tailwindcss";
 @tailwind utilities;
 
+/* ============================================================
+   EVS 2026 — Design System
+   Paleta militar moderna: graphite + olive + emerald accent
+   Light/Dark via [data-theme]
+============================================================ */
+
 :root {
-  color-scheme: dark;
+  /* Tipografia */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Inter", var(--font-sans);
+  --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
 
-  --bg: 10 10 12;        /* quase preto */
-  --panel: 16 16 20;     /* card */
-  --panel2: 20 20 26;    /* card hover */
-  --line: 45 45 55;      /* borda */
-  --text: 232 232 240;   /* texto */
-  --muted: 160 160 175;  /* secundário */
+  /* Escala de raio */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 22px;
+  --r-2xl: 28px;
+  --r-pill: 999px;
 
-  --accent: 255 92 12;   /* laranja titã */
-  --ok: 74 222 128;      /* verde */
-  --bad: 248 113 113;    /* vermelho */
-  --warn: 251 191 36;    /* amarelo */
+  /* Sombras (montadas pra dark, ajustadas em light abaixo) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
 
-  --shadow: 0 20px 60px rgba(0,0,0,.55);
+  /* Transições */
+  --t-fast: 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-med: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-html, body {
+/* ---------- DARK (default) ---------- */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* superfícies */
+  --bg: 8 10 12; /* chão */
+  --bg-elev: 14 17 20; /* topbar, modal scrim */
+  --surface: 18 22 26; /* card */
+  --surface-2: 24 28 33; /* card hover */
+  --surface-3: 32 38 44; /* input/altinho */
+  --line: 38 44 51; /* borda padrão */
+  --line-strong: 60 68 76; /* borda forte/focus ring */
+
+  /* texto */
+  --fg: 232 236 240;
+  --fg-muted: 158 168 178;
+  --fg-faint: 110 120 130;
+
+  /* primário (emerald militar — verde-folha apagado) */
+  --primary: 86 173 122; /* #56AD7A */
+  --primary-strong: 110 200 145;
+  --primary-soft: 86 173 122;
+  --on-primary: 8 18 14;
+
+  /* acento secundário (olive/oliva queimado) */
+  --accent: 178 168 96;
+  --accent-strong: 210 200 130;
+
+  /* feedback */
+  --ok: 86 200 140;
+  --warn: 232 184 92;
+  --bad: 240 110 110;
+  --info: 110 180 230;
+
+  /* gradientes do fundo */
+  --bg-glow-1: 86 173 122; /* verde-musgo */
+  --bg-glow-2: 178 168 96; /* oliva */
+}
+
+/* ---------- LIGHT ---------- */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: 246 247 248;
+  --bg-elev: 255 255 255;
+  --surface: 255 255 255;
+  --surface-2: 248 249 250;
+  --surface-3: 240 242 244;
+  --line: 222 226 230;
+  --line-strong: 196 202 208;
+
+  --fg: 22 28 34;
+  --fg-muted: 90 98 106;
+  --fg-faint: 132 142 152;
+
+  --primary: 38 130 86;
+  --primary-strong: 28 110 70;
+  --primary-soft: 38 130 86;
+  --on-primary: 255 255 255;
+
+  --accent: 130 110 40;
+  --accent-strong: 96 80 20;
+
+  --ok: 22 130 80;
+  --warn: 180 130 30;
+  --bad: 200 60 60;
+  --info: 30 100 180;
+
+  --bg-glow-1: 38 130 86;
+  --bg-glow-2: 130 110 40;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+/* ========== base ========== */
+
+html,
+body {
   height: 100%;
 }
 
 body {
   margin: 0;
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+
+  color: rgb(var(--fg));
   background:
-    radial-gradient(900px 500px at 10% 0%, rgba(255,92,12,.12), transparent 55%),
-    radial-gradient(800px 420px at 100% 20%, rgba(74,222,128,.10), transparent 60%),
+    radial-gradient(
+      900px 520px at 8% -10%,
+      rgba(var(--bg-glow-1), 0.10),
+      transparent 60%
+    ),
+    radial-gradient(
+      820px 440px at 100% 10%,
+      rgba(var(--bg-glow-2), 0.08),
+      transparent 60%
+    ),
     rgb(var(--bg));
-  color: rgb(var(--text));
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background-attachment: fixed;
 }
 
-/* scroll mais “app” no iOS */
-* { -webkit-tap-highlight-color: transparent; }
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(var(--primary), 0.35);
+  color: rgb(var(--fg));
+}
+
+/* scroll discreto */
+:where(*)::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+:where(*)::-webkit-scrollbar-thumb {
+  background: rgb(var(--line));
+  border-radius: 999px;
+}
+:where(*)::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--line-strong));
+}
+:where(*)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* foco acessível */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid rgba(var(--primary), 0.85);
+  outline-offset: 2px;
+  border-radius: var(--r-md);
+}
+
+/* utilitários custom usados pelo app */
+@layer utilities {
+  .surface {
+    background: rgb(var(--surface));
+  }
+  .surface-2 {
+    background: rgb(var(--surface-2));
+  }
+  .surface-3 {
+    background: rgb(var(--surface-3));
+  }
+  .text-fg {
+    color: rgb(var(--fg));
+  }
+  .text-muted {
+    color: rgb(var(--fg-muted));
+  }
+  .text-faint {
+    color: rgb(var(--fg-faint));
+  }
+  .border-line {
+    border-color: rgb(var(--line));
+  }
+  .ring-line {
+    --tw-ring-color: rgb(var(--line));
+  }
+  .shadow-soft {
+    box-shadow: var(--shadow-md);
+  }
+  .shadow-pop {
+    box-shadow: var(--shadow-lg);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* gradient stripe pra dashboard */
+  .stripe-mil {
+    background: linear-gradient(
+      135deg,
+      rgba(var(--primary), 0.18),
+      rgba(var(--accent), 0.10) 60%,
+      transparent
+    );
+  }
+
+  /* glass card */
+  .glass {
+    background: rgba(var(--surface), 0.78);
+    backdrop-filter: saturate(140%) blur(14px);
+    -webkit-backdrop-filter: saturate(140%) blur(14px);
+  }
+
+  /* fade in suave */
+  .anim-rise {
+    animation: rise var(--t-med) ease-out both;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* keyboard hint chip */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgb(var(--surface-3));
+  border: 1px solid rgb(var(--line));
+  color: rgb(var(--fg-muted));
+}
+
+/* tira o ring laranja do user-agent em forms */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: inherit;
+}

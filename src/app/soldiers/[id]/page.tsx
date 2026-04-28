@@ -2,6 +2,41 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import {
+  ArrowLeft,
+  Pencil,
+  Trash2,
+  Plus,
+  Minus,
+  ShieldCheck,
+  Activity,
+  CarFront,
+  AlertTriangle,
+  Calendar,
+  X,
+} from "lucide-react";
+import {
+  Section,
+  Card,
+  Avatar,
+  Pill,
+  KV,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  Button,
+  LinkButton,
+  Modal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Skeleton,
+  EmptyState,
+  Textarea,
+  Input,
+  cn,
+} from "@/components/ui";
 
 type FATD = {
   id: string;
@@ -73,7 +108,6 @@ type Soldier = {
   usedDrugs: boolean;
   drugsDetails?: string | null;
 
-    // ===== NOVOS CAMPOS (perfil social / família / saúde / etc.) =====
   tattoos?: string | null;
   childrenCount?: number | null;
 
@@ -91,9 +125,9 @@ type Soldier = {
 
   householdCount?: number | null;
 
-  familyIncome?: any; // Decimal (pode vir string/obj) -> vamos converter na exibição
+  familyIncome?: any;
   helpsFamily: boolean;
-  helpsFamilyAmount?: any; // Decimal
+  helpsFamilyAmount?: any;
 
   hasSiblings: boolean;
   siblingsCount?: number | null;
@@ -131,10 +165,17 @@ type Soldier = {
 
   workedBeforeEB: boolean;
   workSignedCard: boolean;
-  workSalary?: any; // Decimal
+  workSalary?: any;
   workDetails?: string | null;
 
   volunteeredToServe: boolean;
+
+  identidadeMilitar?: string | null;
+  altura?: number | null;
+  cabelo?: string | null;
+  cutis?: string | null;
+  corOlhos?: string | null;
+  doadorOrgaos?: boolean | null;
 
   fatds: FATD[];
   fos: FO[];
@@ -144,6 +185,12 @@ const PLATOON_LABEL: Record<string, string> = {
   P1: "1º Pelotão",
   P2: "2º Pelotão",
   P3: "3º Pelotão",
+};
+
+const PLATOON_TONE: Record<string, "primary" | "accent" | "info"> = {
+  P1: "primary",
+  P2: "accent",
+  P3: "info",
 };
 
 const BANK_LABEL: Record<string, string> = {
@@ -181,9 +228,22 @@ function moneyBR(v: any): string {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function numOrDash(v: any): string {
-  if (v === null || v === undefined || v === "") return "—";
-  return String(v);
+function formatCpf(cpf: string) {
+  const d = (cpf ?? "").replace(/\D/g, "");
+  if (d.length !== 11) return cpf;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+function YN(v: boolean | null | undefined) {
+  return v ? (
+    <Pill kind="ok" size="sm">
+      Sim
+    </Pill>
+  ) : (
+    <Pill kind="muted" size="sm">
+      Não
+    </Pill>
+  );
 }
 
 export default function SoldierDetailsPage() {
@@ -193,20 +253,23 @@ export default function SoldierDetailsPage() {
   const [soldier, setSoldier] = useState<Soldier | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [tab, setTab] = useState<string>("overview");
 
-  // FO quick modal
+  // FO modal
   const [foOpen, setFoOpen] = useState(false);
   const [foType, setFoType] = useState<"POSITIVO" | "NEGATIVO">("POSITIVO");
   const [foText, setFoText] = useState("");
-  const [foDate, setFoDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [foDate, setFoDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
   const [foSaving, setFoSaving] = useState(false);
 
   const meta = useMemo(() => {
     if (!soldier) return null;
     return {
       platoon: soldier.platoon ? PLATOON_LABEL[soldier.platoon] : "—",
-      createdAt: new Date(soldier.createdAt).toLocaleString(),
-      updatedAt: new Date(soldier.updatedAt).toLocaleString(),
+      createdAt: new Date(soldier.createdAt).toLocaleDateString("pt-BR"),
+      updatedAt: new Date(soldier.updatedAt).toLocaleDateString("pt-BR"),
     };
   }, [soldier]);
 
@@ -245,7 +308,6 @@ export default function SoldierDetailsPage() {
       alert("Digite o fato observado.");
       return;
     }
-
     setFoSaving(true);
     try {
       const res = await fetch(`/api/soldiers/${id}/fo`, {
@@ -257,12 +319,12 @@ export default function SoldierDetailsPage() {
           date: `${foDate}T12:00:00.000Z`,
         }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "Erro ao lançar FO.");
-
       const created: FO = data.fo;
-      setSoldier((prev) => (prev ? { ...prev, fos: [created, ...prev.fos] } : prev));
+      setSoldier((prev) =>
+        prev ? { ...prev, fos: [created, ...prev.fos] } : prev,
+      );
       setFoOpen(false);
     } catch (e: any) {
       alert(e?.message ?? "Erro.");
@@ -275,393 +337,543 @@ export default function SoldierDetailsPage() {
     if (!confirm("Excluir este FO?")) return;
     const res = await fetch(`/api/fo/${foId}`, { method: "DELETE" });
     if (res.ok) {
-      setSoldier((prev) => (prev ? { ...prev, fos: prev.fos.filter((x) => x.id !== foId) } : prev));
+      setSoldier((prev) =>
+        prev ? { ...prev, fos: prev.fos.filter((x) => x.id !== foId) } : prev,
+      );
     }
+  }
+
+  async function deleteSoldier() {
+    if (!soldier) return;
+    const ok = confirm(
+      `Excluir ${soldier.warName}?\n\nIsso apaga também FATDs e FOs.`,
+    );
+    if (!ok) return;
+    const res = await fetch(`/api/soldiers/${soldier.id}`, {
+      method: "DELETE",
+    });
+    if (res.ok) window.location.href = "/";
   }
 
   if (!id) return null;
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4 text-sm text-zinc-300">
-        Carregando ficha...
+      <div className="space-y-4">
+        <Skeleton className="h-40" />
+        <Skeleton className="h-12" />
+        <Skeleton className="h-64" />
       </div>
     );
   }
 
   if (err || !soldier) {
     return (
-      <div className="space-y-3">
-        <div className="rounded-2xl border border-red-900/40 bg-red-950/30 p-4 text-sm text-red-200">
+      <Card className="space-y-3">
+        <div className="text-sm text-[rgb(var(--bad))]">
           {err ?? "Militar não encontrado."}
         </div>
-        <a
-          href="/"
-          className="inline-block rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm font-semibold text-zinc-200"
-        >
+        <LinkButton href="/" variant="outline" leftIcon={<ArrowLeft size={14} />}>
           Voltar
-        </a>
-      </div>
+        </LinkButton>
+      </Card>
     );
   }
 
+  const counts = {
+    fos: soldier.fos.length,
+    fosPos: soldier.fos.filter((f) => f.type === "POSITIVO").length,
+    fosNeg: soldier.fos.filter((f) => f.type === "NEGATIVO").length,
+    fatds: soldier.fatds.length,
+  };
+
   return (
-    <div className="space-y-4 pb-24">
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4">
-        <div className="flex items-center gap-4">
-          <div className="h-24 w-24 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
-            {soldier.photoUrl ? (
-              <img src={soldier.photoUrl} alt={soldier.warName} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-xs text-zinc-500">sem foto</div>
-            )}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-xl font-semibold">{soldier.warName}</div>
-            <div className="truncate text-sm text-zinc-400">{soldier.fullName}</div>
-
-            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-zinc-300 sm:grid-cols-4">
-              <Meta label="CPF" value={soldier.cpf} />
-              <Meta label="IDT" value={soldier.idt} />
-              <Meta label="Pelotão" value={meta?.platoon ?? "—"} />
-              <Meta label="FOs" value={String(soldier.fos?.length ?? 0)} />
-              <Meta label="Criado" value={meta?.createdAt ?? "—"} />
-              <Meta label="Atualizado" value={meta?.updatedAt ?? "—"} />
-              <Meta label="Esqd" value={soldier.squad ?? "Comando"} />
-              <Meta label="Laranjeira" value={soldier.laranjeira ? "Sim" : "Não"} />
+    <div className="space-y-5 pb-28">
+      {/* HEADER */}
+      <Card className="relative overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-32 stripe-mil pointer-events-none" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="flex items-center gap-4">
+            <Avatar
+              src={soldier.photoUrl}
+              alt={soldier.warName}
+              size={104}
+              fallback={(soldier.warName || soldier.fullName).slice(0, 2)}
+              ring
+              className="shadow-pop"
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted">
+                <span>{soldier.squad ?? "Comando"}</span>
+                {soldier.platoon ? (
+                  <Pill kind={PLATOON_TONE[soldier.platoon] ?? "muted"} size="sm">
+                    {PLATOON_LABEL[soldier.platoon]}
+                  </Pill>
+                ) : null}
+              </div>
+              <h1 className="mt-1 truncate font-display text-2xl font-bold tracking-tight text-fg sm:text-3xl">
+                {soldier.warName || soldier.fullName}
+              </h1>
+              <div className="truncate text-sm text-muted">
+                {soldier.fullName}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {soldier.isAthlete ? (
+                  <Pill kind="ok" size="sm" leftIcon={<Activity size={11} />}>
+                    Atleta
+                  </Pill>
+                ) : null}
+                {soldier.hasLicense ? (
+                  <Pill kind="info" size="sm" leftIcon={<CarFront size={11} />}>
+                    CNH {soldier.licenseCategory ?? ""}
+                  </Pill>
+                ) : null}
+                {soldier.laranjeira ? (
+                  <Pill kind="accent" size="sm" leftIcon={<ShieldCheck size={11} />}>
+                    Laranjeira
+                  </Pill>
+                ) : null}
+                {soldier.usedDrugs ? (
+                  <Pill kind="bad" size="sm" leftIcon={<AlertTriangle size={11} />}>
+                    Já usou drogas
+                  </Pill>
+                ) : null}
+                {soldier.volunteeredToServe ? (
+                  <Pill kind="primary" size="sm">
+                    Voluntário
+                  </Pill>
+                ) : null}
+              </div>
             </div>
           </div>
+
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <LinkButton
+              href={`/soldiers/${soldier.id}/edit`}
+              variant="secondary"
+              size="sm"
+              leftIcon={<Pencil size={14} />}
+            >
+              Editar
+            </LinkButton>
+            <Button
+              variant="danger"
+              size="sm"
+              leftIcon={<Trash2 size={14} />}
+              onClick={deleteSoldier}
+            >
+              Excluir
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Meta label="CPF" value={formatCpf(soldier.cpf)} />
+          <Meta label="IDT" value={soldier.idt || "—"} />
+          <Meta label="Pelotão" value={meta?.platoon ?? "—"} />
+          <Meta
+            label="FOs / FATDs"
+            value={`${counts.fos} / ${counts.fatds}`}
+            hint={`+${counts.fosPos} -${counts.fosNeg}`}
+          />
+        </div>
+      </Card>
+
+      {/* TABS */}
+      <Tabs value={tab} onChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="overview">Visão geral</TabsTrigger>
+          <TabsTrigger value="family">Família</TabsTrigger>
+          <TabsTrigger value="health">Saúde &amp; ocorrências</TabsTrigger>
+          <TabsTrigger value="work">Renda &amp; trabalho</TabsTrigger>
+          <TabsTrigger value="fos">FOs ({counts.fos})</TabsTrigger>
+          <TabsTrigger value="fatds">FATDs ({counts.fatds})</TabsTrigger>
+        </TabsList>
+
+        {/* OVERVIEW */}
+        <TabsContent value="overview">
+          <Section title="Identificação">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Nome de guerra" value={soldier.warName} />
+              <KV label="Nome completo" value={soldier.fullName} />
+              <KV label="Identidade Militar" value={soldier.identidadeMilitar} />
+              <KV label="Naturalidade" value={soldier.naturalidade} />
+              <KV
+                label="Altura"
+                value={soldier.altura ? `${soldier.altura} cm` : "—"}
+              />
+              <KV
+                label="Tipo sanguíneo"
+                value={
+                  soldier.bloodType
+                    ? (BLOOD_LABEL[soldier.bloodType] ?? soldier.bloodType)
+                    : "—"
+                }
+              />
+              <KV label="Cabelo" value={soldier.cabelo} />
+              <KV label="Cútis" value={soldier.cutis} />
+              <KV label="Cor dos olhos" value={soldier.corOlhos} />
+              <KV label="Doador de órgãos" value={YN(soldier.doadorOrgaos)} />
+            </div>
+          </Section>
+
+          <Section title="Contato e endereço">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Telefone" value={soldier.phone} />
+              <KV label="Telefone emergência" value={soldier.emergencyPhone} />
+              <KV label="Endereço" full value={soldier.address} />
+              <KV label="Facebook" value={soldier.facebook} />
+              <KV label="Instagram" value={soldier.instagram} />
+            </div>
+          </Section>
+
+          <Section title="Banco">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <KV
+                label="Banco"
+                value={soldier.bank ? (BANK_LABEL[soldier.bank] ?? soldier.bank) : "—"}
+              />
+              <KV label="Agência" value={soldier.agency} />
+              <KV label="Conta" value={soldier.account} />
+            </div>
+          </Section>
+
+          <Section title="Outros">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Religião" value={soldier.religion} />
+              <KV label="Título de eleitor" value={soldier.voterTitle} />
+              <KV label="Atleta" value={YN(soldier.isAthlete)} />
+              <KV label="Atividade física" value={soldier.physicalActivity} />
+              <KV label="Voluntariou-se" value={YN(soldier.volunteeredToServe)} />
+              <KV label="Cadastrado em" value={meta?.createdAt} />
+            </div>
+          </Section>
+
+          <Section title="Histórico e observações">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Histórico familiar" full value={soldier.familyHistory} />
+              <KV label="Experiência profissional" full value={soldier.professionalExp} />
+              <KV label="Escolaridade" value={soldier.education} />
+              <KV label="Observações positivas" full value={soldier.notesPositive} />
+              <KV label="Observações negativas" full value={soldier.notesNegative} />
+            </div>
+          </Section>
+        </TabsContent>
+
+        {/* FAMILY */}
+        <TabsContent value="family">
+          <Section title="Pais">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Nome da mãe" value={soldier.motherName} />
+              <KV label="Nome do pai" value={soldier.fatherName} />
+              <KV label="Relação com a mãe" full value={soldier.relationshipMother} />
+              <KV label="Relação com o pai" full value={soldier.relationshipFather} />
+              <KV label="Relação com irmãos" full value={soldier.relationshipSiblings} />
+            </div>
+          </Section>
+
+          <Section title="Convivência e estrutura familiar">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Mora com os pais" value={YN(soldier.livesWithParents)} />
+              <KV label="Mora com quem" value={soldier.livesWithWhom} />
+              <KV label="Tem irmãos" value={YN(soldier.hasSiblings)} />
+              <KV
+                label="Qtd. irmãos"
+                value={soldier.siblingsCount ?? "—"}
+              />
+              <KV label="Qtd. filhos" value={soldier.childrenCount ?? "—"} />
+              <KV label="Qtd. pessoas na casa" value={soldier.householdCount ?? "—"} />
+              <KV label="Já morou fora" value={YN(soldier.livedAway)} />
+              <KV label="Onde morou fora" value={soldier.livedAwayWhere} />
+              <KV label="Perdeu familiar próximo" value={YN(soldier.lostCloseFamily)} />
+              <KV label="Quem / causa" full value={soldier.lostWhoCause} />
+              <KV label="Tatuagens" full value={soldier.tattoos} />
+            </div>
+          </Section>
+
+          <Section title="Relacionamento e parentes">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Namorada" value={YN(soldier.hasGirlfriend)} />
+              {soldier.hasGirlfriend ? (
+                <KV label="Endereço da namorada" full value={soldier.girlfriendAddress} />
+              ) : null}
+              <KV label="Parente militar" value={YN(soldier.hasMilitaryRelative)} />
+              {soldier.hasMilitaryRelative ? (
+                <KV label="Detalhes parente militar" full value={soldier.militaryRelativeDetails} />
+              ) : null}
+            </div>
+          </Section>
+        </TabsContent>
+
+        {/* HEALTH */}
+        <TabsContent value="health">
+          <Section title="Saúde">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Problemas de saúde" full value={soldier.healthIssues} />
+              <KV label="Já fez cirurgias" value={YN(soldier.hadSurgeries)} />
+              <KV label="Detalhes (cirurgias)" full value={soldier.surgeriesDetails} />
+              <KV label="Sequelas de acidente" value={YN(soldier.accidentSequelae)} />
+              <KV label="Detalhes (sequelas)" full value={soldier.accidentSequelaeDetails} />
+              <KV label="IST/DST" value={YN(soldier.hasSTDs)} />
+              <KV label="Detalhes IST/DST" full value={soldier.stdDetails} />
+              <KV label="Convulsões/desmaios" value={YN(soldier.hasSeizuresFainting)} />
+            </div>
+          </Section>
+
+          <Section title="Saúde mental">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Sintomas mentais" value={YN(soldier.mentalSymptoms)} />
+              <KV label="Detalhes" full value={soldier.mentalSymptomsDetails} />
+              <KV label="Medo súbito" value={YN(soldier.suddenFear)} />
+              <KV
+                label="Irritabilidade/ansiedade"
+                value={YN(soldier.irritabilityAnxietyEtc)}
+              />
+              <KV
+                label="Detalhes"
+                full
+                value={soldier.irritabilityAnxietyEtcDetails}
+              />
+            </div>
+          </Section>
+
+          <Section title="Hábitos e ocorrências">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Fumante" value={YN(soldier.smoker)} />
+              <KV label="Consome álcool" value={YN(soldier.alcoholUse)} />
+              <KV label="Já usou drogas" value={YN(soldier.usedDrugs)} />
+              <KV label="Quais drogas" full value={soldier.drugsDetails} />
+              <KV label="Já foi preso" value={YN(soldier.hasBeenArrested)} />
+              <KV label="Detalhes prisão" full value={soldier.arrestDetails} />
+              <KV label="Problemas com a polícia" value={YN(soldier.policeProblems)} />
+              <KV label="Detalhes (polícia)" full value={soldier.policeProblemsDetails} />
+            </div>
+          </Section>
+        </TabsContent>
+
+        {/* WORK */}
+        <TabsContent value="work">
+          <Section title="Renda e ajuda à família">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Renda familiar" value={moneyBR(soldier.familyIncome)} />
+              <KV label="Ajuda a família" value={YN(soldier.helpsFamily)} />
+              <KV label="Quanto ajuda" value={moneyBR(soldier.helpsFamilyAmount)} />
+            </div>
+          </Section>
+
+          <Section title="Trabalho antes do EB">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KV label="Trabalhou antes" value={YN(soldier.workedBeforeEB)} />
+              <KV label="Carteira assinada" value={YN(soldier.workSignedCard)} />
+              <KV label="Salário" value={moneyBR(soldier.workSalary)} />
+              <KV label="Detalhes" full value={soldier.workDetails} />
+            </div>
+          </Section>
+        </TabsContent>
+
+        {/* FOs */}
+        <TabsContent value="fos">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              leftIcon={<Plus size={14} />}
+              onClick={() => openFo("POSITIVO")}
+            >
+              Novo FO+
+            </Button>
+            <Button
+              variant="secondary"
+              leftIcon={<Minus size={14} />}
+              onClick={() => openFo("NEGATIVO")}
+            >
+              Novo FO-
+            </Button>
+          </div>
+
+          {soldier.fos.length === 0 ? (
+            <EmptyState
+              icon={<Calendar size={20} />}
+              title="Nenhum FO registrado"
+              description="Use FO+ ou FO- pra lançar um fato observado."
+            />
+          ) : (
+            <div className="space-y-2">
+              {soldier.fos.map((fo) => (
+                <FoCard key={fo.id} fo={fo} onDelete={deleteFO} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* FATDs */}
+        <TabsContent value="fatds">
+          {soldier.fatds.length === 0 ? (
+            <EmptyState
+              icon={<AlertTriangle size={20} />}
+              title="Nenhuma FATD registrada"
+            />
+          ) : (
+            <div className="space-y-2">
+              {soldier.fatds.map((f) => (
+                <Card key={f.id}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Pill kind="warn" size="sm">
+                        {PUNISH_LABEL[f.punishment] ?? f.punishment}
+                      </Pill>
+                      <span className="text-xs text-muted">
+                        {new Date(f.date).toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-2 whitespace-pre-wrap text-sm text-fg">
+                    {f.reason}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <LinkButton href="/" variant="ghost" leftIcon={<ArrowLeft size={14} />}>
+        Voltar pro painel
+      </LinkButton>
+
+      {/* FO QUICK BAR */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line glass">
+        <div className="mx-auto flex max-w-[1400px] gap-2.5 px-4 py-3 lg:pl-[18.5rem] lg:pr-10">
+          <Button
+            variant="secondary"
+            className="flex-1"
+            leftIcon={<Plus size={14} />}
+            onClick={() => openFo("POSITIVO")}
+          >
+            FO +
+          </Button>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            leftIcon={<Minus size={14} />}
+            onClick={() => openFo("NEGATIVO")}
+          >
+            FO −
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <a
-          href={`/soldiers/${soldier.id}/edit`}
-          className="rounded-2xl bg-zinc-100 px-4 py-3 text-center text-sm font-semibold text-zinc-900"
-        >
-          Editar
-        </a>
+      {/* MODAL FO */}
+      <Modal open={foOpen} onClose={() => !foSaving && setFoOpen(false)} size="md">
+        <ModalHeader
+          title={
+            <span className="flex items-center gap-2">
+              {foType === "POSITIVO" ? (
+                <Pill kind="ok">FO Positivo</Pill>
+              ) : (
+                <Pill kind="bad">FO Negativo</Pill>
+              )}
+              <span className="text-fg">
+                {soldier.warName || soldier.fullName}
+              </span>
+            </span>
+          }
+          description="Lance o fato observado de forma objetiva."
+          onClose={() => !foSaving && setFoOpen(false)}
+        />
+        <ModalBody className="space-y-4">
+          <div>
+            <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted">
+              Data
+            </div>
+            <Input
+              type="date"
+              value={foDate}
+              onChange={(e) => setFoDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted">
+              Fato observado
+            </div>
+            <Textarea
+              value={foText}
+              onChange={(e) => setFoText(e.target.value)}
+              rows={5}
+              placeholder="Ex: Demonstrou liderança na instrução de tiro de combate."
+            />
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            onClick={submitFO}
+            loading={foSaving}
+            className="w-full"
+            size="lg"
+          >
+            Salvar FO
+          </Button>
+        </ModalFooter>
+      </Modal>
+    </div>
+  );
+}
 
-        <button
-          onClick={async () => {
-            const ok = confirm(`Excluir ${soldier.warName}?\n\nIsso apaga também FATDs e FOs.`);
-            if (!ok) return;
-            const res = await fetch(`/api/soldiers/${soldier.id}`, { method: "DELETE" });
-            if (res.ok) window.location.href = "/";
-          }}
-          className="rounded-2xl border border-red-900 bg-red-950/40 px-4 py-3 text-sm font-semibold text-red-200"
-        >
-          Excluir
-        </button>
-      </div>
-
-      <Section title={`Fatos Observados (FO) — ${soldier.fos.length}`}>
-        {soldier.fos.length === 0 ? (
-          <div className="text-sm text-zinc-400">Nenhum FO registrado.</div>
-        ) : (
-          <div className="space-y-2">
-            {soldier.fos.map((fo) => {
-  const isNeg = fo.type === "NEGATIVO";
-
+function Meta({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: React.ReactNode;
+}) {
   return (
-    <div
-      key={fo.id}
-      className={`rounded-xl border p-3 ${
+    <div className="rounded-[var(--r-md)] surface-2 px-3 py-2 ring-1 ring-line">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+        {label}
+      </div>
+      <div className="mt-0.5 truncate text-sm font-semibold text-fg">{value}</div>
+      {hint ? <div className="text-[10px] text-faint">{hint}</div> : null}
+    </div>
+  );
+}
+
+function FoCard({ fo, onDelete }: { fo: FO; onDelete: (id: string) => void }) {
+  const isNeg = fo.type === "NEGATIVO";
+  return (
+    <Card
+      className={cn(
+        "transition",
         isNeg
-          ? "border-red-900/50 bg-red-950/40"
-          : "border-zinc-800 bg-zinc-950"
-      }`}
+          ? "border-[rgba(var(--bad),0.3)] bg-[rgba(var(--bad),0.04)]"
+          : "border-[rgba(var(--ok),0.3)] bg-[rgba(var(--ok),0.04)]",
+      )}
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <div
-            className={`text-sm font-semibold ${
-              isNeg ? "text-red-300" : "text-emerald-300"
-            }`}
-          >
-            {isNeg ? "FO -" : "FO +"}
-          </div>
-
-          <div className="text-xs text-zinc-400">
-            {new Date(fo.date).toLocaleDateString()}
-          </div>
+        <div className="flex items-center gap-2">
+          <Pill kind={isNeg ? "bad" : "ok"} size="sm">
+            {isNeg ? "FO −" : "FO +"}
+          </Pill>
+          <span className="text-xs text-muted">
+            {new Date(fo.date).toLocaleDateString("pt-BR")}
+          </span>
         </div>
-
         <button
-          onClick={() => deleteFO(fo.id)}
-          className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-2 py-1 text-[11px] font-semibold text-zinc-200"
+          onClick={() => onDelete(fo.id)}
+          aria-label="Excluir FO"
+          className="grid h-7 w-7 place-items-center rounded-full surface-2 text-muted ring-1 ring-line hover:text-fg"
         >
-          Excluir
+          <X size={12} />
         </button>
       </div>
-
       <div
-        className={`mt-2 whitespace-pre-wrap text-sm ${
-          isNeg ? "text-red-200" : "text-zinc-200"
-        }`}
+        className={cn(
+          "mt-2 whitespace-pre-wrap text-sm",
+          isNeg ? "text-fg" : "text-fg",
+        )}
       >
         {fo.text}
       </div>
-    </div>
-  );
-})}
-          </div>
-        )}
-      </Section>
-
-      <Section title="Contato / Endereço">
-        <KV label="Telefone" value={soldier.phone} />
-        <KV label="Telefone emergência" value={soldier.emergencyPhone} />
-        <KV label="Naturalidade" value={soldier.naturalidade} />
-        <KV label="Endereço" value={soldier.address} />
-      </Section>
-
-      <Section title="Família / Histórico">
-        <KV label="Nome da mãe" value={soldier.motherName} />
-        <KV label="Nome do pai" value={soldier.fatherName} />
-        <KV label="Histórico familiar" value={soldier.familyHistory} />
-      </Section>
-
-      <Section title="Formação / Profissão">
-        <KV label="Escolaridade" value={soldier.education} />
-        <KV label="Experiência profissional" value={soldier.professionalExp} />
-      </Section>
-
-      <Section title="CNH / Saúde">
-        <KV label="Habilitação" value={soldier.hasLicense ? "Sim" : "Não"} />
-        <KV label="Categoria" value={soldier.licenseCategory} />
-        <KV label="Tipo sanguíneo" value={soldier.bloodType ? (BLOOD_LABEL[soldier.bloodType] ?? soldier.bloodType) : "—"} />
-      </Section>
-
-      <Section title="Banco">
-        <KV label="Banco" value={soldier.bank ? (BANK_LABEL[soldier.bank] ?? soldier.bank) : "—"} />
-        <KV label="Agência" value={soldier.agency} />
-        <KV label="Conta" value={soldier.account} />
-      </Section>
-
-      <Section title="Outros">
-        <KV label="Religião" value={soldier.religion} />
-        <KV label="Título de eleitor" value={soldier.voterTitle} />
-        <KV label="Atleta" value={soldier.isAthlete ? "Sim" : "Não"} />
-        <KV label="Atividade física" value={soldier.physicalActivity} />
-      </Section>
-
-      <Section title="Social / Saúde / Relacionamento">
-        <KV label="Facebook" value={soldier.facebook} />
-        <KV label="Instagram" value={soldier.instagram} />
-        <KV label="Problemas de saúde" value={soldier.healthIssues} />
-        <KV label="Namorada" value={soldier.hasGirlfriend ? "Sim" : "Não"} />
-        {soldier.hasGirlfriend ? (
-          <KV label="Endereço da namorada (ref.)" value={soldier.girlfriendAddress} />
-        ) : null}
-        <KV label="Já usou drogas" value={soldier.usedDrugs ? "Sim" : "Não"} />
-        {soldier.usedDrugs ? <KV label="Quais?" value={soldier.drugsDetails} /> : null}
-      </Section>
-
-      <Section title="Perfil / Família">
-  <KV label="Tatuagens" value={soldier.tattoos} />
-  <KV label="Qtd. filhos" value={numOrDash(soldier.childrenCount)} />
-
-  <KV label="Mora com os pais" value={soldier.livesWithParents ? "Sim" : "Não"} />
-  {soldier.livesWithParents ? <KV label="Mora com quem" value={soldier.livesWithWhom} /> : null}
-
-  <KV label="Tem irmãos" value={soldier.hasSiblings ? "Sim" : "Não"} />
-  {soldier.hasSiblings ? <KV label="Qtd. irmãos" value={numOrDash(soldier.siblingsCount)} /> : null}
-
-  <KV label="Perdeu familiar próximo" value={soldier.lostCloseFamily ? "Sim" : "Não"} />
-  {soldier.lostCloseFamily ? <KV label="Quem / causa" value={soldier.lostWhoCause} /> : null}
-
-  <KV label="Já morou fora" value={soldier.livedAway ? "Sim" : "Não"} />
-  {soldier.livedAway ? <KV label="Onde morou fora" value={soldier.livedAwayWhere} /> : null}
-
-  <KV label="Qtd. pessoas na casa" value={numOrDash(soldier.householdCount)} />
-</Section>
-
-<Section title="Renda / Trabalho">
-  <KV label="Renda familiar" value={moneyBR(soldier.familyIncome)} />
-  <KV label="Ajuda a família" value={soldier.helpsFamily ? "Sim" : "Não"} />
-  {soldier.helpsFamily ? <KV label="Valor que ajuda" value={moneyBR(soldier.helpsFamilyAmount)} /> : null}
-
-  <KV label="Trabalhou antes do EB" value={soldier.workedBeforeEB ? "Sim" : "Não"} />
-  <KV label="Carteira assinada" value={soldier.workSignedCard ? "Sim" : "Não"} />
-  <KV label="Salário" value={moneyBR(soldier.workSalary)} />
-  <KV label="Detalhes (trabalho)" value={soldier.workDetails} />
-
-  <KV label="Se voluntariou para servir" value={soldier.volunteeredToServe ? "Sim" : "Não"} />
-</Section>
-
-<Section title="Hábitos / Ocorrências / Saúde (detalhado)">
-  <KV label="Fumante" value={soldier.smoker ? "Sim" : "Não"} />
-  <KV label="Consome álcool" value={soldier.alcoholUse ? "Sim" : "Não"} />
-
-  <KV label="Já foi preso" value={soldier.hasBeenArrested ? "Sim" : "Não"} />
-  {soldier.hasBeenArrested ? <KV label="Detalhes da prisão" value={soldier.arrestDetails} /> : null}
-
-  <KV label="Problemas com a polícia" value={soldier.policeProblems ? "Sim" : "Não"} />
-  {soldier.policeProblems ? <KV label="Detalhes (polícia)" value={soldier.policeProblemsDetails} /> : null}
-
-  <KV label="Sequelas de acidente" value={soldier.accidentSequelae ? "Sim" : "Não"} />
-  {soldier.accidentSequelae ? <KV label="Detalhes (sequelas)" value={soldier.accidentSequelaeDetails} /> : null}
-
-  <KV label="Já fez cirurgias" value={soldier.hadSurgeries ? "Sim" : "Não"} />
-  {soldier.hadSurgeries ? <KV label="Detalhes (cirurgias)" value={soldier.surgeriesDetails} /> : null}
-
-  <KV label="Possui IST/DST" value={soldier.hasSTDs ? "Sim" : "Não"} />
-  {soldier.hasSTDs ? <KV label="Detalhes (IST/DST)" value={soldier.stdDetails} /> : null}
-
-  <KV label="Convulsões/desmaios" value={soldier.hasSeizuresFainting ? "Sim" : "Não"} />
-
-  <KV label="Sintomas mentais" value={soldier.mentalSymptoms ? "Sim" : "Não"} />
-  {soldier.mentalSymptoms ? <KV label="Detalhes (sintomas mentais)" value={soldier.mentalSymptomsDetails} /> : null}
-
-  <KV label="Medo súbito" value={soldier.suddenFear ? "Sim" : "Não"} />
-
-  <KV label="Irritabilidade/ansiedade etc." value={soldier.irritabilityAnxietyEtc ? "Sim" : "Não"} />
-  {soldier.irritabilityAnxietyEtc ? (
-    <KV label="Detalhes (ansiedade etc.)" value={soldier.irritabilityAnxietyEtcDetails} />
-  ) : null}
-
-  <KV label="Parente militar" value={soldier.hasMilitaryRelative ? "Sim" : "Não"} />
-  {soldier.hasMilitaryRelative ? (
-    <KV label="Detalhes (parente militar)" value={soldier.militaryRelativeDetails} />
-  ) : null}
-</Section>
-
-<Section title="Relações familiares">
-  <KV label="Relação com o pai" value={soldier.relationshipFather} />
-  <KV label="Relação com a mãe" value={soldier.relationshipMother} />
-  <KV label="Relação com irmãos" value={soldier.relationshipSiblings} />
-</Section>
-
-      <Section title="Fatos observados (campos livres)">
-        <KV label="Positivos (campo)" value={soldier.notesPositive} />
-        <KV label="Negativos (campo)" value={soldier.notesNegative} />
-      </Section>
-
-      <Section title={`FATDs (${soldier.fatds.length})`}>
-        {soldier.fatds.length === 0 ? (
-          <div className="text-sm text-zinc-400">Nenhuma FATD registrada.</div>
-        ) : (
-          <div className="space-y-2">
-            {soldier.fatds.map((f) => (
-              <div key={f.id} className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-semibold">{PUNISH_LABEL[f.punishment] ?? f.punishment}</div>
-                  <div className="text-xs text-zinc-400">{new Date(f.date).toLocaleDateString()}</div>
-                </div>
-                <div className="mt-2 whitespace-pre-wrap text-sm text-zinc-200">{f.reason}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
-
-      <a
-        href="/"
-        className="block w-full rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-4 text-center text-sm font-semibold text-zinc-200"
-      >
-        Voltar
-      </a>
-
-      {/* Bottom bar - FO quick actions */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl gap-3 px-4 py-3">
-          <button
-            onClick={() => openFo("POSITIVO")}
-            className="flex-1 rounded-2xl bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-900"
-          >
-            FO +
-          </button>
-          <button
-            onClick={() => openFo("NEGATIVO")}
-            className="flex-1 rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm font-semibold text-zinc-100"
-          >
-            FO -
-          </button>
-        </div>
-      </div>
-
-      {/* Bottom sheet modal */}
-      {foOpen && (
-        <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/60" onClick={() => !foSaving && setFoOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto w-full max-w-6xl rounded-t-3xl border border-zinc-800 bg-zinc-950 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-base font-semibold">{foType === "POSITIVO" ? "Registrar FO +" : "Registrar FO -"}</div>
-                <div className="text-xs text-zinc-400">{soldier.warName} — {soldier.fullName}</div>
-              </div>
-              <button
-                onClick={() => !foSaving && setFoOpen(false)}
-                className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2 text-xs font-semibold text-zinc-200"
-              >
-                Fechar
-              </button>
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <div className="sm:col-span-1">
-                <div className="text-xs text-zinc-400">Data</div>
-                <input
-                  type="date"
-                  value={foDate}
-                  onChange={(e) => setFoDate(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900/30 px-3 py-3 text-sm outline-none focus:border-zinc-500"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <div className="text-xs text-zinc-400">Fato observado</div>
-                <textarea
-                  value={foText}
-                  onChange={(e) => setFoText(e.target.value)}
-                  placeholder="Digite o FO de forma objetiva..."
-                  rows={4}
-                  className="mt-2 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900/30 px-3 py-3 text-sm outline-none focus:border-zinc-500"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={submitFO}
-              disabled={foSaving}
-              className="mt-4 w-full rounded-2xl bg-zinc-100 px-4 py-4 text-sm font-semibold text-zinc-900 disabled:opacity-60"
-            >
-              {foSaving ? "Salvando..." : "Salvar FO"}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4">
-      <div className="mb-3 text-sm font-semibold">{title}</div>
-      <div className="space-y-2">{children}</div>
-    </section>
-  );
-}
-
-function KV({ label, value }: { label: string; value?: any }) {
-    const v =
-    value === null || value === undefined || value === "" ? "—" : String(value).trim() || "—";
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
-      <div className="text-[11px] text-zinc-400">{label}</div>
-      <div className="mt-1 whitespace-pre-wrap text-sm text-zinc-200">{v}</div>
-    </div>
-  );
-}
-
-function Meta({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2">
-      <div className="text-[10px] text-zinc-400">{label}</div>
-      <div className="mt-0.5 truncate text-[11px] font-semibold text-zinc-100">{value}</div>
-    </div>
+    </Card>
   );
 }

@@ -1,19 +1,50 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Panel, Input, Pill, Select } from "@/components/ui";
+import {
+  Search,
+  Users,
+  ShieldCheck,
+  Activity,
+  CarFront,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  Plus,
+  Download,
+  Filter,
+  X,
+} from "lucide-react";
+import {
+  Section,
+  Input,
+  Pill,
+  Stat,
+  Button,
+  LinkButton,
+  Skeleton,
+  EmptyState,
+  cn,
+} from "@/components/ui";
+import { SoldierTable, type SoldierRow } from "@/components/SoldierTable";
+import { ExportModal } from "@/components/ExportModal";
 
 type Platoon = "" | "P1" | "P2" | "P3";
 
-type SoldierListItem = {
-  id: string;
-  fullName: string;
-  warName: string;
-  cpf: string;
-  platoon: "P1" | "P2" | "P3" | null;
-  squad: string;
-  photoUrl: string | null;
-  _count?: { fatds?: number; fos?: number };
+type Stats = {
+  total: number;
+  byPlatoon: Record<"P1" | "P2" | "P3" | "NA", number>;
+  fos: { positive: number; negative: number };
+  fatds: { month: number; total: number };
+  flags: {
+    athletes: number;
+    cnh: number;
+    laranjeira: number;
+    drugs: number;
+    arrested: number;
+    militaryRelative: number;
+    voluntary: number;
+  };
 };
 
 const PLATOON_OPTIONS: { value: Platoon; label: string }[] = [
@@ -23,558 +54,438 @@ const PLATOON_OPTIONS: { value: Platoon; label: string }[] = [
   { value: "P3", label: "3º Pelotão" },
 ];
 
-type ExportField =
-  // sistema
-  | "id"
-  | "createdAt"
-  | "updatedAt"
-  | "squad"
-  | "photoUrl"
-  | "platoon"
-
-  // obrigatórios
-  | "warName"
-  | "fullName"
-
-  // docs / identificação
-  | "cpf"
-  | "idt"
-
-  // contato
-  | "phone"
-  | "emergencyPhone"
-  | "address"
-  | "naturalidade"
-
-  // família
-  | "motherName"
-  | "fatherName"
-
-  // flags
-  | "laranjeira"
-
-  // histórico
-  | "familyHistory"
-  | "professionalExp"
-  | "education"
-
-  // CNH
-  | "hasLicense"
-  | "licenseCategory"
-
-  // saúde / sangue
-  | "bloodType"
-  | "healthIssues"
-
-  // banco
-  | "bank"
-  | "agency"
-  | "account"
-
-  // outros
-  | "religion"
-  | "voterTitle"
-
-  // atleta
-  | "isAthlete"
-  | "physicalActivity"
-
-  // observações
-  | "notesPositive"
-  | "notesNegative"
-
-  // redes sociais
-  | "facebook"
-  | "instagram"
-
-  // relacionamento
-  | "hasGirlfriend"
-  | "girlfriendAddress"
-
-  // drogas
-  | "usedDrugs"
-  | "drugsDetails"
-
-  // ===== NOVOS CAMPOS =====
-  | "tattoos"
-  | "childrenCount"
-  | "hasBeenArrested"
-  | "arrestDetails"
-  | "livesWithParents"
-  | "livesWithWhom"
-  | "lostCloseFamily"
-  | "lostWhoCause"
-  | "livedAway"
-  | "livedAwayWhere"
-  | "householdCount"
-  | "familyIncome"
-  | "helpsFamily"
-  | "helpsFamilyAmount"
-  | "hasSiblings"
-  | "siblingsCount"
-  | "smoker"
-  | "alcoholUse"
-  | "policeProblems"
-  | "policeProblemsDetails"
-  | "accidentSequelae"
-  | "accidentSequelaeDetails"
-  | "hadSurgeries"
-  | "surgeriesDetails"
-  | "hasSTDs"
-  | "stdDetails"
-  | "hasSeizuresFainting"
-  | "mentalSymptoms"
-  | "mentalSymptomsDetails"
-  | "suddenFear"
-  | "irritabilityAnxietyEtc"
-  | "irritabilityAnxietyEtcDetails"
-  | "hasMilitaryRelative"
-  | "militaryRelativeDetails"
-  | "relationshipFather"
-  | "relationshipMother"
-  | "relationshipSiblings"
-  | "workedBeforeEB"
-  | "workSignedCard"
-  | "workSalary"
-  | "workDetails"
-  | "volunteeredToServe"
-
-  // ===== IDENTIFICAÇÃO FÍSICA =====
-  | "identidadeMilitar"
-  | "altura"
-  | "cabelo"
-  | "cutis"
-  | "corOlhos"
-  | "doadorOrgaos";
-
-const REQUIRED_EXPORT: ExportField[] = ["warName", "fullName"];
-
-const EXPORT_FIELDS: { key: ExportField; label: string }[] = [
-  { key: "warName", label: "Nome de Guerra (obrigatório)" },
-  { key: "fullName", label: "Nome Completo (obrigatório)" },
-
-  { key: "id", label: "ID" },
-  { key: "createdAt", label: "Criado em" },
-  { key: "updatedAt", label: "Atualizado em" },
-  { key: "squad", label: "Esquadrão" },
-  { key: "photoUrl", label: "Foto (URL)" },
-
-  { key: "cpf", label: "CPF" },
-  { key: "idt", label: "IDT" },
-  { key: "platoon", label: "Pelotão" },
-
-  { key: "phone", label: "Telefone" },
-  { key: "emergencyPhone", label: "Telefone Emergência" },
-
-  { key: "naturalidade", label: "Naturalidade" },
-  { key: "motherName", label: "Nome da Mãe" },
-  { key: "fatherName", label: "Nome do Pai" },
-  { key: "address", label: "Endereço" },
-
-  { key: "laranjeira", label: "Laranjeira" },
-
-  { key: "hasLicense", label: "Possui CNH" },
-  { key: "licenseCategory", label: "Categoria CNH" },
-
-  { key: "bloodType", label: "Tipo Sanguíneo" },
-
-  { key: "bank", label: "Banco" },
-  { key: "agency", label: "Agência" },
-  { key: "account", label: "Conta" },
-
-  { key: "religion", label: "Religião" },
-  { key: "voterTitle", label: "Título de Eleitor" },
-
-  { key: "isAthlete", label: "Atleta" },
-  { key: "physicalActivity", label: "Atividade Física" },
-  { key: "facebook", label: "Facebook" },
-  { key: "instagram", label: "Instagram" },
-
-  { key: "healthIssues", label: "Problemas de saúde" },
-
-  { key: "hasGirlfriend", label: "Namorada" },
-  { key: "girlfriendAddress", label: "Endereço da namorada (ref.)" },
-
-  { key: "usedDrugs", label: "Já usou drogas" },
-  { key: "drugsDetails", label: "Quais drogas" },
-    { key: "familyHistory", label: "Histórico familiar" },
-  { key: "professionalExp", label: "Experiência profissional" },
-  { key: "education", label: "Escolaridade" },
-
-  { key: "notesPositive", label: "Fatos positivos (campo)" },
-  { key: "notesNegative", label: "Fatos negativos (campo)" },
-    { key: "tattoos", label: "Tatuagens" },
-  { key: "childrenCount", label: "Qtd. filhos" },
-
-  { key: "hasBeenArrested", label: "Já foi preso" },
-  { key: "arrestDetails", label: "Detalhes da prisão" },
-
-  { key: "livesWithParents", label: "Mora com os pais" },
-  { key: "livesWithWhom", label: "Mora com quem" },
-
-  { key: "lostCloseFamily", label: "Perdeu familiar próximo" },
-  { key: "lostWhoCause", label: "Quem / causa" },
-
-  { key: "livedAway", label: "Já morou fora" },
-  { key: "livedAwayWhere", label: "Onde morou fora" },
-
-  { key: "householdCount", label: "Qtd. pessoas na casa" },
-
-  { key: "familyIncome", label: "Renda familiar (R$)" },
-  { key: "helpsFamily", label: "Ajuda a família" },
-  { key: "helpsFamilyAmount", label: "Valor que ajuda (R$)" },
-
-  { key: "hasSiblings", label: "Tem irmãos" },
-  { key: "siblingsCount", label: "Qtd. irmãos" },
-
-  { key: "smoker", label: "Fumante" },
-  { key: "alcoholUse", label: "Consome álcool" },
-
-  { key: "policeProblems", label: "Problemas com a polícia" },
-  { key: "policeProblemsDetails", label: "Detalhes (polícia)" },
-
-  { key: "accidentSequelae", label: "Sequelas de acidente" },
-  { key: "accidentSequelaeDetails", label: "Detalhes (sequelas)" },
-
-  { key: "hadSurgeries", label: "Já fez cirurgias" },
-  { key: "surgeriesDetails", label: "Detalhes (cirurgias)" },
-
-  { key: "hasSTDs", label: "Possui IST/DST" },
-  { key: "stdDetails", label: "Detalhes (IST/DST)" },
-
-  { key: "hasSeizuresFainting", label: "Convulsões/desmaios" },
-
-  { key: "mentalSymptoms", label: "Sintomas mentais" },
-  { key: "mentalSymptomsDetails", label: "Detalhes (sintomas mentais)" },
-
-  { key: "suddenFear", label: "Medo súbito" },
-
-  { key: "irritabilityAnxietyEtc", label: "Irritabilidade/ansiedade etc." },
-  { key: "irritabilityAnxietyEtcDetails", label: "Detalhes (ansiedade etc.)" },
-
-  { key: "hasMilitaryRelative", label: "Parente militar" },
-  { key: "militaryRelativeDetails", label: "Detalhes (parente militar)" },
-
-  { key: "relationshipFather", label: "Relação com o pai" },
-  { key: "relationshipMother", label: "Relação com a mãe" },
-  { key: "relationshipSiblings", label: "Relação com irmãos" },
-
-  { key: "workedBeforeEB", label: "Trabalhou antes do EB" },
-  { key: "workSignedCard", label: "Carteira assinada" },
-  { key: "workSalary", label: "Salário (R$)" },
-  { key: "workDetails", label: "Detalhes (trabalho)" },
-
-  { key: "volunteeredToServe", label: "Se voluntariou para servir" },
-
-  // ===== IDENTIFICAÇÃO FÍSICA =====
-  { key: "identidadeMilitar", label: "Identidade Militar (IM)" },
-  { key: "altura", label: "Altura (cm)" },
-  { key: "cabelo", label: "Cabelo" },
-  { key: "cutis", label: "Cútis" },
-  { key: "corOlhos", label: "Cor dos Olhos" },
-  { key: "doadorOrgaos", label: "Doador de Órgãos" },
-];
-
-function platoonLabel(p?: SoldierListItem["platoon"]): string {
-  if (p === "P1") return "1º Pelotão";
-  if (p === "P2") return "2º Pelotão";
-  if (p === "P3") return "3º Pelotão";
-  return "—";
-}
+type FlagFilter = "athlete" | "cnh" | "laranjeira" | "drugs" | "";
 
 export default function HomePage() {
   const [q, setQ] = useState<string>("");
   const [platoon, setPlatoon] = useState<Platoon>("");
+  const [flagFilter, setFlagFilter] = useState<FlagFilter>("");
+
   const [loading, setLoading] = useState<boolean>(false);
-  const [soldiers, setSoldiers] = useState<SoldierListItem[]>([]);
+  const [soldiers, setSoldiers] = useState<SoldierRow[]>([]);
   const [error, setError] = useState<string>("");
 
-  // export modal + filtros de export
-  const [exportOpen, setExportOpen] = useState<boolean>(false);
-  const [onlyCnh, setOnlyCnh] = useState<boolean>(false);
-  const [onlyVoter, setOnlyVoter] = useState<boolean>(false);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  const [selected, setSelected] = useState<Record<ExportField, boolean>>(() => {
-    const base = {} as Record<ExportField, boolean>;
-    for (const f of EXPORT_FIELDS) base[f.key] = false;
-    // obrigatórios sempre true
-    for (const r of REQUIRED_EXPORT) base[r] = true;
-    // defaults úteis
-    base.cpf = true;
-    base.idt = true;
-    base.platoon = true;
-        base.squad = true;
-    base.phone = true;
-    return base;
-  });
+  const [exportOpen, setExportOpen] = useState(false);
 
+  // abre export se ?export=1 (vindo do command palette)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("export") === "1") {
+      setExportOpen(true);
+      params.delete("export");
+      const next = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        next ? `${window.location.pathname}?${next}` : window.location.pathname,
+      );
+    }
+  }, []);
+
+  // métricas
   useEffect(() => {
     let cancelled = false;
+    (async () => {
+      setStatsLoading(true);
+      try {
+        const res = await fetch("/api/stats", { cache: "no-store" });
+        const data = (await res.json()) as Stats;
+        if (!cancelled) setStats(data);
+      } catch {
+        /* noop */
+      } finally {
+        if (!cancelled) setStatsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
+  // lista
+  useEffect(() => {
+    let cancelled = false;
     const run = async () => {
       setLoading(true);
       setError("");
       try {
         const res = await fetch(
-  `/api/soldiers?q=${encodeURIComponent(q)}&platoon=${encodeURIComponent(platoon)}`,
-  { cache: "no-store" }
-);
-        const data = (await res.json()) as { soldiers?: SoldierListItem[]; error?: string };
+          `/api/soldiers?q=${encodeURIComponent(q)}&platoon=${encodeURIComponent(platoon)}`,
+          { cache: "no-store" },
+        );
+        const data = (await res.json()) as {
+          soldiers?: SoldierRow[];
+          error?: string;
+        };
         if (!res.ok) throw new Error(data?.error || "Erro ao buscar soldados.");
-        const list = Array.isArray(data.soldiers) ? data.soldiers : [];
-        if (!cancelled) setSoldiers(list);
+        if (!cancelled) setSoldiers(data.soldiers ?? []);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Erro ao buscar.");
+        if (!cancelled)
+          setError(e instanceof Error ? e.message : "Erro ao buscar.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
-
     const t = setTimeout(run, 180);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [q, platoon ]);
+  }, [q, platoon]);
 
   const filtered = useMemo(() => {
-    if (!platoon) return soldiers;
-    return soldiers.filter((s) => (s.platoon ?? "") === platoon);
-  }, [soldiers, platoon]);
+    let r = soldiers;
+    if (platoon) r = r.filter((s) => (s.platoon ?? "") === platoon);
+    if (flagFilter === "athlete") r = r.filter((s) => s.isAthlete);
+    if (flagFilter === "cnh") r = r.filter((s) => s.hasLicense);
+    if (flagFilter === "laranjeira") r = r.filter((s) => s.laranjeira);
+    if (flagFilter === "drugs") r = r.filter((s) => s.usedDrugs);
+    return r;
+  }, [soldiers, platoon, flagFilter]);
 
   const total = filtered.length;
 
-  function toggleField(k: ExportField) {
-    if (REQUIRED_EXPORT.includes(k)) return; // travado
-    setSelected((prev) => ({ ...prev, [k]: !prev[k] }));
-  }
-
-  function selectAll() {
-    setSelected((prev) => {
-      const next = { ...prev };
-      for (const f of EXPORT_FIELDS) next[f.key] = true;
-      for (const r of REQUIRED_EXPORT) next[r] = true;
-      return next;
-    });
-  }
-
-  function clearAll() {
-    setSelected((prev) => {
-      const next = { ...prev };
-      for (const f of EXPORT_FIELDS) next[f.key] = false;
-      for (const r of REQUIRED_EXPORT) next[r] = true; // mantém obrigatórios
-      return next;
-    });
-  }
-
-  function buildExportUrl(): string {
-    const picked = Object.entries(selected)
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-
-    // garante obrigatórios (mesmo se alguém tentar tirar)
-    for (const r of REQUIRED_EXPORT) {
-      if (!picked.includes(r)) picked.unshift(r);
-    }
-
-    const sp = new URLSearchParams();
-    sp.set("fields", picked.join(","));
-    if (onlyCnh) sp.set("onlyCnh", "1");
-    if (onlyVoter) sp.set("onlyVoter", "1");
-    if (platoon) sp.set("platoon", platoon);
-    if (q.trim()) sp.set("q", q.trim());
-
-    return `/api/export?${sp.toString()}`;
-  }
+  const hasFilter = q.trim() || platoon || flagFilter;
 
   return (
-    <div className="space-y-4">
-      <Panel
-        title="Soldados EVS 2026"
-        right={<Pill kind="muted">{loading ? "Buscando…" : `${total} registro(s)`}</Pill>}
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <div className="mb-2 text-[11px] font-semibold text-white/60">Buscar (nome, guerra, CPF, IDT)</div>
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ex: SILVA ou 12345678900" />
+    <div className="space-y-6">
+      {/* HERO / TÍTULO */}
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[rgb(var(--primary-strong))]">
+            EVS 2026 · Esquadrão de Comando
           </div>
-
-          <div>
-            <div className="mb-2 text-[11px] font-semibold text-white/60">Filtrar por Pelotão</div>
-            <Select value={platoon} onChange={(e) => setPlatoon(e.target.value as Platoon)}>
-              {PLATOON_OPTIONS.map((o) => (
-                <option key={o.value || "ALL"} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </Select>
-          </div>
+          <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-fg sm:text-4xl text-balance">
+            Painel de comando
+          </h1>
+          <p className="mt-1 max-w-xl text-sm text-muted">
+            Visão geral, ficha individual, FOs e FATDs.{" "}
+            <kbd>⌘</kbd> <kbd>K</kbd> abre a busca rápida.
+          </p>
         </div>
-
-        <div className="mt-3 flex items-center justify-between gap-3">
-          {error ? (
-            <div className="flex-1 rounded-2xl bg-red-500/10 p-3 text-xs text-red-200 ring-1 ring-red-500/20">
-              {error}
-            </div>
-          ) : (
-            <div className="text-xs text-white/50">
-            </div>
-          )}
-
-          <button
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <Button
+            variant="outline"
+            leftIcon={<Download size={14} />}
             onClick={() => setExportOpen(true)}
-            className="shrink-0 rounded-2xl bg-[rgb(var(--accent))] px-4 py-2 text-xs font-extrabold text-black shadow-[var(--shadow)]"
           >
             Exportar
-          </button>
+          </Button>
+          <LinkButton href="/soldiers/new" leftIcon={<Plus size={14} />}>
+            Novo militar
+          </LinkButton>
         </div>
-      </Panel>
+      </div>
 
-      <div className="space-y-3">
-        {filtered.map((s) => (
-          <a
-            key={s.id}
-            href={`/soldiers/${s.id}`}
-            className="block rounded-3xl bg-white/5 p-4 ring-1 ring-white/10 shadow-[var(--shadow)] active:scale-[.99]"
-          >
-            <div className="flex items-center gap-4">
-              <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-3xl bg-black/40 ring-2 ring-[rgba(158,226,185,.22)]">
-                {s.photoUrl ? (
-                  <img src={s.photoUrl} alt={s.warName || s.fullName} className="h-full w-full object-cover object-center" />
-                ) : (
-                  <div className="grid h-full w-full place-items-center text-[10px] font-semibold text-white/35">
-                    SEM FOTO
-                  </div>
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-base font-extrabold tracking-tight">{s.warName || s.fullName}</div>
-                <div className="truncate text-[12px] text-white/60">{s.fullName}</div>
-                <div className="mt-2 rounded-xl bg-black/35 px-2 py-1 text-[11px] text-white/55 ring-1 ring-white/10">
-                  CPF: {s.cpf}
-                </div>
-              </div>
-
-              <div className="flex flex-col items-end gap-2">
-                <Pill kind="muted">{platoonLabel(s.platoon)}</Pill>
-              </div>
-            </div>
-          </a>
-        ))}
-
-        {!loading && filtered.length === 0 ? (
-          <div className="rounded-3xl bg-white/5 p-6 text-center text-sm text-white/55 ring-1 ring-white/10">
-            Nenhum militar encontrado.
-          </div>
+      {/* MÉTRICAS */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {statsLoading ? (
+          <>
+            <Skeleton className="h-[110px]" />
+            <Skeleton className="h-[110px]" />
+            <Skeleton className="h-[110px]" />
+            <Skeleton className="h-[110px]" />
+          </>
+        ) : stats ? (
+          <>
+            <Stat
+              tone="primary"
+              label="Total de militares"
+              value={stats.total}
+              icon={<Users size={18} />}
+              hint={
+                stats.byPlatoon.NA > 0
+                  ? `${stats.byPlatoon.NA} sem pelotão`
+                  : "Distribuídos nos 3 pelotões"
+              }
+            />
+            <Stat
+              tone="ok"
+              label="FOs positivos"
+              value={stats.fos.positive}
+              icon={<TrendingUp size={18} />}
+              hint={`${stats.fos.negative} negativos no total`}
+            />
+            <Stat
+              tone="warn"
+              label="FATDs no mês"
+              value={stats.fatds.month}
+              icon={<AlertTriangle size={18} />}
+              hint={`${stats.fatds.total} acumuladas`}
+            />
+            <Stat
+              tone="accent"
+              label="Atletas"
+              value={stats.flags.athletes}
+              icon={<Activity size={18} />}
+              hint={`${stats.flags.cnh} com CNH · ${stats.flags.laranjeira} laranjeira`}
+            />
+          </>
         ) : null}
       </div>
 
-      {/* MODAL EXPORT */}
-{exportOpen && (
-  <div className="fixed inset-0 z-50">
-    <div
-      className="absolute inset-0 bg-black/65"
-      onClick={() => setExportOpen(false)}
-    />
+      {/* SUB-MÉTRICAS POR PELOTÃO */}
+      {stats && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <PlatoonCard
+            label="1º Pelotão"
+            count={stats.byPlatoon.P1}
+            tone="primary"
+            active={platoon === "P1"}
+            onClick={() =>
+              setPlatoon((p) => (p === "P1" ? "" : "P1"))
+            }
+          />
+          <PlatoonCard
+            label="2º Pelotão"
+            count={stats.byPlatoon.P2}
+            tone="accent"
+            active={platoon === "P2"}
+            onClick={() =>
+              setPlatoon((p) => (p === "P2" ? "" : "P2"))
+            }
+          />
+          <PlatoonCard
+            label="3º Pelotão"
+            count={stats.byPlatoon.P3}
+            tone="info"
+            active={platoon === "P3"}
+            onClick={() =>
+              setPlatoon((p) => (p === "P3" ? "" : "P3"))
+            }
+          />
+          <PlatoonCard
+            label="Sem pelotão"
+            count={stats.byPlatoon.NA}
+            tone="muted"
+            active={false}
+            onClick={() => {}}
+            disabled
+          />
+        </div>
+      )}
 
-    {/* container central */}
-    <div className="absolute inset-0 flex items-start justify-center p-3 pt-16 sm:pt-20">
-      {/* card do modal */}
-      <div
-        className="
-          w-full max-w-3xl
-          rounded-3xl border border-white/10 bg-black/80
-          shadow-[var(--shadow)] backdrop-blur-xl
-          max-h-[calc(100vh-90px)]
-          flex flex-col overflow-hidden
-        "
+      {/* BUSCA + FILTROS */}
+      <Section
+        title="Militares"
+        right={
+          <Pill kind="muted">
+            {loading ? "Buscando…" : `${total} registro${total === 1 ? "" : "s"}`}
+          </Pill>
+        }
       >
-        {/* header fixo */}
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 p-4">
-          <div className="min-w-0">
-            <div className="truncate text-base font-extrabold">Exportar CSV</div>
-            <div className="mt-1 text-xs text-white/60">
-              Nome de Guerra e Nome Completo são obrigatórios.
-            </div>
+        <div className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
+          <div className="relative">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar por nome, guerra, CPF ou IDT"
+              className="pl-9"
+            />
           </div>
 
-          <button
-            onClick={() => setExportOpen(false)}
-            className="shrink-0 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80"
+          <select
+            value={platoon}
+            onChange={(e) => setPlatoon(e.target.value as Platoon)}
+            className="h-11 rounded-[var(--r-md)] surface-3 border border-line px-3 text-sm text-fg outline-none transition focus:border-[rgba(var(--primary),0.7)]"
           >
-            Fechar
-          </button>
-        </div>
+            {PLATOON_OPTIONS.map((o) => (
+              <option key={o.value || "ALL"} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
 
-        {/* corpo rolável */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {/* filtros rápidos */}
-        
-
-          {/* ações */}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              onClick={selectAll}
-              className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80"
-            >
-              Marcar tudo
-            </button>
-            <button
-              onClick={clearAll}
-              className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80"
+          {hasFilter ? (
+            <Button
+              variant="ghost"
+              leftIcon={<X size={14} />}
+              onClick={() => {
+                setQ("");
+                setPlatoon("");
+                setFlagFilter("");
+              }}
             >
               Limpar
-            </button>
-
-            
-          </div>
-
-          {/* lista de campos */}
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            {EXPORT_FIELDS.map((f) => {
-              const locked = REQUIRED_EXPORT.includes(f.key);
-              const checked = !!selected[f.key];
-
-              return (
-                <label
-                  key={f.key}
-                  className={`flex items-center gap-3 rounded-2xl border p-3 text-sm ${
-                    locked
-                      ? "border-emerald-500/25 bg-emerald-500/10"
-                      : "border-white/10 bg-white/5"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={locked}
-                    onChange={() => toggleField(f.key)}
-                    className="h-4 w-4"
-                  />
-                  <span className={locked ? "text-emerald-100" : "text-white/85"}>
-                    {f.label}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
+            </Button>
+          ) : null}
         </div>
 
-        {/* footer fixo com CTA */}
-        <div className="border-t border-white/10 bg-black/60 p-4">
-          <a
-            href={buildExportUrl()}
-            className="block w-full rounded-2xl bg-[rgb(var(--accent))] px-4 py-4 text-center text-sm font-extrabold text-black shadow-[var(--shadow)]"
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
+            <Filter size={12} />
+            Atributos
+          </span>
+          <Chip
+            active={flagFilter === "athlete"}
+            onClick={() =>
+              setFlagFilter((f) => (f === "athlete" ? "" : "athlete"))
+            }
+            icon={<Activity size={12} />}
           >
-            Baixar CSV
-          </a>
-          
+            Atletas {stats ? `(${stats.flags.athletes})` : ""}
+          </Chip>
+          <Chip
+            active={flagFilter === "cnh"}
+            onClick={() => setFlagFilter((f) => (f === "cnh" ? "" : "cnh"))}
+            icon={<CarFront size={12} />}
+          >
+            CNH {stats ? `(${stats.flags.cnh})` : ""}
+          </Chip>
+          <Chip
+            active={flagFilter === "laranjeira"}
+            onClick={() =>
+              setFlagFilter((f) => (f === "laranjeira" ? "" : "laranjeira"))
+            }
+            icon={<ShieldCheck size={12} />}
+          >
+            Laranjeira {stats ? `(${stats.flags.laranjeira})` : ""}
+          </Chip>
+          <Chip
+            active={flagFilter === "drugs"}
+            onClick={() =>
+              setFlagFilter((f) => (f === "drugs" ? "" : "drugs"))
+            }
+            icon={<AlertTriangle size={12} />}
+          >
+            Já usaram drogas {stats ? `(${stats.flags.drugs})` : ""}
+          </Chip>
         </div>
+
+        {error ? (
+          <div className="mt-4 rounded-[var(--r-md)] border border-[rgba(var(--bad),0.3)] bg-[rgba(var(--bad),0.08)] px-3 py-2 text-xs text-[rgb(var(--bad))]">
+            {error}
+          </div>
+        ) : null}
+      </Section>
+
+      {/* LISTA */}
+      <div className="space-y-3">
+        {loading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={<Users size={20} />}
+            title="Nenhum militar encontrado"
+            description={
+              hasFilter
+                ? "Tente ajustar os filtros ou limpar a busca."
+                : "Cadastre o primeiro militar pra começar."
+            }
+            action={
+              <LinkButton href="/soldiers/new" leftIcon={<Plus size={14} />}>
+                Novo militar
+              </LinkButton>
+            }
+          />
+        ) : (
+          <SoldierTable rows={filtered} />
+        )}
       </div>
+
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        q={q}
+        platoon={platoon}
+      />
     </div>
-  </div>
-)}
-    </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition",
+        active
+          ? "border-[rgba(var(--primary),0.45)] bg-[rgba(var(--primary),0.14)] text-[rgb(var(--primary-strong))]"
+          : "border-line surface-2 text-muted hover:text-fg",
+      )}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function PlatoonCard({
+  label,
+  count,
+  tone,
+  active,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  count: number;
+  tone: "primary" | "accent" | "info" | "muted";
+  active: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  const dot =
+    tone === "primary"
+      ? "rgb(var(--primary))"
+      : tone === "accent"
+        ? "rgb(var(--accent-strong))"
+        : tone === "info"
+          ? "rgb(var(--info))"
+          : "rgb(var(--fg-faint))";
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "group flex flex-col items-start gap-1 rounded-[var(--r-xl)] border p-3.5 text-left transition",
+        active
+          ? "border-[rgba(var(--primary),0.45)] bg-[rgba(var(--primary),0.06)]"
+          : "border-line surface hover:surface-2",
+        disabled ? "cursor-default opacity-70" : "cursor-pointer",
+      )}
+    >
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+        <span
+          className="h-2 w-2 rounded-full"
+          style={{ background: dot }}
+        />
+        {label}
+      </div>
+      <div className="font-display text-2xl font-bold tracking-tight text-fg">
+        {count}
+      </div>
+      {!disabled ? (
+        <div className="text-[10px] text-faint">
+          {active ? "Filtrando" : "Clique para filtrar"}
+        </div>
+      ) : (
+        <div className="text-[10px] text-faint">militar</div>
+      )}
+    </button>
   );
 }
