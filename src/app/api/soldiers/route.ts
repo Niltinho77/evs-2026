@@ -97,7 +97,7 @@ export async function GET(req: Request) {
       usedDrugs: true,
       _count: { select: { fatds: true, fos: true } },
     },
-    take: 50,
+    take: 1000,
   });
 
   return NextResponse.json({ soldiers });
