@@ -79,12 +79,26 @@ export async function GET(req: Request) {
         }
       : {};
 
-  const soldiers = (await prisma.soldier.findMany({
+  const soldiers = await prisma.soldier.findMany({
     where,
     orderBy: { fullName: "asc" },
-    include: { _count: { select: { fatds: true, fos: true } } },
+    select: {
+      id: true,
+      fullName: true,
+      warName: true,
+      cpf: true,
+      idt: true,
+      platoon: true,
+      squad: true,
+      photoUrl: true,
+      laranjeira: true,
+      isAthlete: true,
+      hasLicense: true,
+      usedDrugs: true,
+      _count: { select: { fatds: true, fos: true } },
+    },
     take: 50,
-  })) as unknown as SoldierListItem[];
+  });
 
   return NextResponse.json({ soldiers });
 }

@@ -232,3 +232,5 @@ export function CommandPalette() {
     </AnimatePresence>
   );
 }
+
+export default CommandPalette;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Search,
   Users,
@@ -27,7 +28,11 @@ import {
   cn,
 } from "@/components/ui";
 import { SoldierTable, type SoldierRow } from "@/components/SoldierTable";
-import { ExportModal } from "@/components/ExportModal";
+
+const ExportModal = dynamic(() => import("@/components/ExportModal"), {
+  ssr: false,
+  loading: () => null,
+});
 
 type Platoon = "" | "P1" | "P2" | "P3";
 
@@ -146,6 +151,24 @@ export default function HomePage() {
     if (flagFilter === "drugs") r = r.filter((s) => s.usedDrugs);
     return r;
   }, [soldiers, platoon, flagFilter]);
+
+  // Contagens dos chips refletem busca + pelotão (escopo visível),
+  // mas ignoram o flagFilter — assim cada chip mostra "quantos seriam
+  // selecionados se eu clicasse só nele".
+  const scopedSoldiers = useMemo(() => {
+    if (!platoon) return soldiers;
+    return soldiers.filter((s) => (s.platoon ?? "") === platoon);
+  }, [soldiers, platoon]);
+
+  const flagCounts = useMemo(
+    () => ({
+      athlete: scopedSoldiers.filter((s) => s.isAthlete).length,
+      cnh: scopedSoldiers.filter((s) => s.hasLicense).length,
+      laranjeira: scopedSoldiers.filter((s) => s.laranjeira).length,
+      drugs: scopedSoldiers.filter((s) => s.usedDrugs).length,
+    }),
+    [scopedSoldiers],
+  );
 
   const total = filtered.length;
 
@@ -331,14 +354,14 @@ export default function HomePage() {
             }
             icon={<Activity size={12} />}
           >
-            Atletas {stats ? `(${stats.flags.athletes})` : ""}
+            Atletas ({flagCounts.athlete})
           </Chip>
           <Chip
             active={flagFilter === "cnh"}
             onClick={() => setFlagFilter((f) => (f === "cnh" ? "" : "cnh"))}
             icon={<CarFront size={12} />}
           >
-            CNH {stats ? `(${stats.flags.cnh})` : ""}
+            CNH ({flagCounts.cnh})
           </Chip>
           <Chip
             active={flagFilter === "laranjeira"}
@@ -347,7 +370,7 @@ export default function HomePage() {
             }
             icon={<ShieldCheck size={12} />}
           >
-            Laranjeira {stats ? `(${stats.flags.laranjeira})` : ""}
+            Laranjeira ({flagCounts.laranjeira})
           </Chip>
           <Chip
             active={flagFilter === "drugs"}
@@ -356,7 +379,7 @@ export default function HomePage() {
             }
             icon={<AlertTriangle size={12} />}
           >
-            Já usaram drogas {stats ? `(${stats.flags.drugs})` : ""}
+            Já usaram drogas ({flagCounts.drugs})
           </Chip>
         </div>
 

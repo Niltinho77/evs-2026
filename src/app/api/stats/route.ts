@@ -51,19 +51,27 @@ export async function GET() {
     platoonMap[key] = row._count._all;
   }
 
-  return NextResponse.json({
-    total,
-    byPlatoon: platoonMap,
-    fos: { positive: foPositive, negative: foNegative },
-    fatds: { month: fatdsMonth, total: fatdsTotal },
-    flags: {
-      athletes,
-      cnh,
-      laranjeira,
-      drugs,
-      arrested,
-      militaryRelative,
-      voluntary,
+  return NextResponse.json(
+    {
+      total,
+      byPlatoon: platoonMap,
+      fos: { positive: foPositive, negative: foNegative },
+      fatds: { month: fatdsMonth, total: fatdsTotal },
+      flags: {
+        athletes,
+        cnh,
+        laranjeira,
+        drugs,
+        arrested,
+        militaryRelative,
+        voluntary,
+      },
     },
-  });
+    {
+      headers: {
+        "Cache-Control":
+          "private, max-age=30, stale-while-revalidate=60",
+      },
+    },
+  );
 }

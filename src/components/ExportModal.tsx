@@ -443,6 +443,8 @@ export function ExportModal({
   );
 }
 
+export default ExportModal;
+
 function FilterChip({
   active,
   label,

@@ -15,9 +15,14 @@ import {
   Command as CommandIcon,
   Shield,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useTheme } from "./ThemeProvider";
-import { CommandPalette } from "./CommandPalette";
 import { cn } from "./ui";
+
+const CommandPalette = dynamic(() => import("./CommandPalette"), {
+  ssr: false,
+  loading: () => null,
+});
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
