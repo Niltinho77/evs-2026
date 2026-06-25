@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionFromRequest, isAdmin } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const session = await getSessionFromRequest(req);
+  const admin = isAdmin(session);
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -61,9 +64,9 @@ export async function GET() {
         athletes,
         cnh,
         laranjeira,
-        drugs,
-        arrested,
-        militaryRelative,
+        drugs: admin ? drugs : 0,
+        arrested: admin ? arrested : 0,
+        militaryRelative: admin ? militaryRelative : 0,
         voluntary,
       },
     },

@@ -1,6 +1,7 @@
 // src/app/api/soldiers/[id]/fatd/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionFromRequest, isAdmin } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,11 @@ export async function POST(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSessionFromRequest(req);
+  if (!isAdmin(session)) {
+    return NextResponse.json({ error: "Acesso restrito ao admin." }, { status: 403 });
+  }
+
   const { id } = await context.params;
   const body = await req.json();
 

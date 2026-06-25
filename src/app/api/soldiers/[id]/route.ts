@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { normalizeCPF, onlyDigits } from "@/lib/format";
 import { saveUploadedImage } from "@/lib/storage";
+import { getSessionFromRequest, isAdmin, maskForCommon } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -46,9 +47,10 @@ function detailsWhen(form: FormData, flagKey: string, detailsKey: string) {
 }
 
 export async function GET(
-  _req: Request,
+  req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSessionFromRequest(req);
   const { id } = await context.params;
 
   const soldier = await prisma.soldier.findUnique({
@@ -63,13 +65,18 @@ export async function GET(
     return NextResponse.json({ error: "Não encontrado." }, { status: 404 });
   }
 
-  return NextResponse.json({ soldier });
+  return NextResponse.json({ soldier: isAdmin(session) ? soldier : maskForCommon(soldier) });
 }
 
 export async function PUT(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSessionFromRequest(req);
+  if (!isAdmin(session)) {
+    return NextResponse.json({ error: "Acesso restrito ao admin." }, { status: 403 });
+  }
+
   const { id } = await context.params;
   const form = await req.formData();
   const photo = form.get("photo") as File | null;
@@ -408,9 +415,14 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSessionFromRequest(req);
+  if (!isAdmin(session)) {
+    return NextResponse.json({ error: "Acesso restrito ao admin." }, { status: 403 });
+  }
+
   const { id } = await context.params;
 
   await prisma.soldier.delete({ where: { id } });

@@ -1,6 +1,7 @@
 // src/app/api/export/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionFromRequest, isAdmin } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -193,6 +194,11 @@ const BOOLEAN_FIELDS: AllowedField[] = [
 ];
 
 export async function GET(req: Request) {
+  const session = await getSessionFromRequest(req);
+  if (!isAdmin(session)) {
+    return NextResponse.json({ error: "Acesso restrito ao admin." }, { status: 403 });
+  }
+
   const { searchParams } = new URL(req.url);
 
   const onlyCnh = searchParams.get("onlyCnh") === "1";

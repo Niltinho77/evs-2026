@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { normalizeCPF, onlyDigits } from "@/lib/format";
 import { saveUploadedImage } from "@/lib/storage";
+import { getSessionFromRequest, isAdmin, maskForCommon } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -60,6 +61,7 @@ type SoldierListItem = {
 };
 
 export async function GET(req: Request) {
+  const session = await getSessionFromRequest(req);
   const { searchParams } = new URL(req.url);
   const qRaw = (searchParams.get("q") ?? "").trim();
 
@@ -100,10 +102,17 @@ export async function GET(req: Request) {
     take: 1000,
   });
 
-  return NextResponse.json({ soldiers });
+  return NextResponse.json({
+    soldiers: isAdmin(session) ? soldiers : soldiers.map((soldier) => maskForCommon(soldier)),
+  });
 }
 
 export async function POST(req: Request) {
+  const session = await getSessionFromRequest(req);
+  if (!isAdmin(session)) {
+    return NextResponse.json({ error: "Acesso restrito ao admin." }, { status: 403 });
+  }
+
   const form = await req.formData();
   const photo = form.get("photo") as File | null;
 

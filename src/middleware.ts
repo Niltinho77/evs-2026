@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 function isPublicAsset(pathname: string) {
   return (
@@ -9,43 +10,45 @@ function isPublicAsset(pathname: string) {
   );
 }
 
-function okToken(req: NextRequest): boolean {
-  const token = process.env.REGISTRATION_TOKEN || "";
-  if (!token) return false;
-
-  const q = req.nextUrl.searchParams.get("t") || "";
-  const c = req.cookies.get("evs_reg")?.value || "";
-  return q === token || c === token;
+function isPublicRoute(pathname: string) {
+  return (
+    pathname === "/login" ||
+    pathname === "/api/auth/login" ||
+    pathname === "/api/auth/logout" ||
+    pathname === "/api/auth/me"
+  );
 }
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // nunca bloqueia assets do Next
-  if (isPublicAsset(pathname)) return NextResponse.next();
-
-  // valida token
-  const token = process.env.REGISTRATION_TOKEN || "";
-  if (!token || !okToken(req)) {
-    // Se você quiser redirecionar pra uma página simples, pode trocar por redirect.
-    return NextResponse.json({ error: "Acesso bloqueado." }, { status: 403 });
+  if (isPublicAsset(pathname) || isPublicRoute(pathname)) {
+    return NextResponse.next();
   }
 
-  // se entrou com ?t=token, grava cookie pra facilitar uso no celular
-  const q = req.nextUrl.searchParams.get("t") || "";
-  const res = NextResponse.next();
+  const session = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!session) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Login obrigatorio." }, { status: 401 });
+    }
 
-  if (q === token) {
-  res.cookies.set("evs_reg", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 12,
-  });
-}
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
 
-  return res;
+  const adminOnlyPage =
+    pathname === "/soldiers/new" ||
+    (pathname.startsWith("/soldiers/") && pathname.endsWith("/edit"));
+  if (adminOnlyPage && session.role !== "admin") {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

@@ -28,6 +28,7 @@ import {
   cn,
 } from "@/components/ui";
 import { SoldierTable, type SoldierRow } from "@/components/SoldierTable";
+import { useAuth } from "@/components/AuthProvider";
 
 const ExportModal = dynamic(() => import("@/components/ExportModal"), {
   ssr: false,
@@ -62,6 +63,7 @@ const PLATOON_OPTIONS: { value: Platoon; label: string }[] = [
 type FlagFilter = "athlete" | "cnh" | "laranjeira" | "drugs" | "";
 
 export default function HomePage() {
+  const { isAdmin } = useAuth();
   const [q, setQ] = useState<string>("");
   const [platoon, setPlatoon] = useState<Platoon>("");
   const [flagFilter, setFlagFilter] = useState<FlagFilter>("");
@@ -190,18 +192,20 @@ export default function HomePage() {
             <kbd>⌘</kbd> <kbd>K</kbd> abre a busca rápida.
           </p>
         </div>
-        <div className="flex w-full items-center gap-2 sm:w-auto">
-          <Button
-            variant="outline"
-            leftIcon={<Download size={14} />}
-            onClick={() => setExportOpen(true)}
-          >
-            Exportar
-          </Button>
-          <LinkButton href="/soldiers/new" leftIcon={<Plus size={14} />}>
-            Novo militar
-          </LinkButton>
-        </div>
+        {isAdmin ? (
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <Button
+              variant="outline"
+              leftIcon={<Download size={14} />}
+              onClick={() => setExportOpen(true)}
+            >
+              Exportar
+            </Button>
+            <LinkButton href="/soldiers/new" leftIcon={<Plus size={14} />}>
+              Novo militar
+            </LinkButton>
+          </div>
+        ) : null}
       </div>
 
       {/* MÉTRICAS */}
@@ -372,15 +376,17 @@ export default function HomePage() {
           >
             Laranjeira ({flagCounts.laranjeira})
           </Chip>
-          <Chip
-            active={flagFilter === "drugs"}
-            onClick={() =>
-              setFlagFilter((f) => (f === "drugs" ? "" : "drugs"))
-            }
-            icon={<AlertTriangle size={12} />}
-          >
-            Já usaram drogas ({flagCounts.drugs})
-          </Chip>
+          {isAdmin ? (
+            <Chip
+              active={flagFilter === "drugs"}
+              onClick={() =>
+                setFlagFilter((f) => (f === "drugs" ? "" : "drugs"))
+              }
+              icon={<AlertTriangle size={12} />}
+            >
+              Já usaram drogas ({flagCounts.drugs})
+            </Chip>
+          ) : null}
         </div>
 
         {error ? (
@@ -408,9 +414,11 @@ export default function HomePage() {
                 : "Cadastre o primeiro militar pra começar."
             }
             action={
-              <LinkButton href="/soldiers/new" leftIcon={<Plus size={14} />}>
-                Novo militar
-              </LinkButton>
+              isAdmin ? (
+                <LinkButton href="/soldiers/new" leftIcon={<Plus size={14} />}>
+                  Novo militar
+                </LinkButton>
+              ) : undefined
             }
           />
         ) : (
@@ -418,12 +426,14 @@ export default function HomePage() {
         )}
       </div>
 
-      <ExportModal
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        q={q}
-        platoon={platoon}
-      />
+      {isAdmin ? (
+        <ExportModal
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          q={q}
+          platoon={platoon}
+        />
+      ) : null}
     </div>
   );
 }

@@ -37,6 +37,7 @@ import {
   Input,
   cn,
 } from "@/components/ui";
+import { useAuth } from "@/components/AuthProvider";
 
 type FATD = {
   id: string;
@@ -247,6 +248,7 @@ function YN(v: boolean | null | undefined) {
 }
 
 export default function SoldierDetailsPage() {
+  const { isAdmin } = useAuth();
   const params = useParams();
   const id = params?.id as string;
 
@@ -447,24 +449,26 @@ export default function SoldierDetailsPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-            <LinkButton
-              href={`/soldiers/${soldier.id}/edit`}
-              variant="secondary"
-              size="sm"
-              leftIcon={<Pencil size={14} />}
-            >
-              Editar
-            </LinkButton>
-            <Button
-              variant="danger"
-              size="sm"
-              leftIcon={<Trash2 size={14} />}
-              onClick={deleteSoldier}
-            >
-              Excluir
-            </Button>
-          </div>
+          {isAdmin ? (
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+              <LinkButton
+                href={`/soldiers/${soldier.id}/edit`}
+                variant="secondary"
+                size="sm"
+                leftIcon={<Pencil size={14} />}
+              >
+                Editar
+              </LinkButton>
+              <Button
+                variant="danger"
+                size="sm"
+                leftIcon={<Trash2 size={14} />}
+                onClick={deleteSoldier}
+              >
+                Excluir
+              </Button>
+            </div>
+          ) : null}
         </div>
 
         <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -699,7 +703,7 @@ export default function SoldierDetailsPage() {
           ) : (
             <div className="space-y-2">
               {soldier.fos.map((fo) => (
-                <FoCard key={fo.id} fo={fo} onDelete={deleteFO} />
+                <FoCard key={fo.id} fo={fo} onDelete={isAdmin ? deleteFO : undefined} />
               ))}
             </div>
           )}
@@ -838,7 +842,7 @@ function Meta({
   );
 }
 
-function FoCard({ fo, onDelete }: { fo: FO; onDelete: (id: string) => void }) {
+function FoCard({ fo, onDelete }: { fo: FO; onDelete?: (id: string) => void }) {
   const isNeg = fo.type === "NEGATIVO";
   return (
     <Card
@@ -858,13 +862,15 @@ function FoCard({ fo, onDelete }: { fo: FO; onDelete: (id: string) => void }) {
             {new Date(fo.date).toLocaleDateString("pt-BR")}
           </span>
         </div>
-        <button
-          onClick={() => onDelete(fo.id)}
-          aria-label="Excluir FO"
-          className="grid h-7 w-7 place-items-center rounded-full surface-2 text-muted ring-1 ring-line hover:text-fg"
-        >
-          <X size={12} />
-        </button>
+        {onDelete ? (
+          <button
+            onClick={() => onDelete(fo.id)}
+            aria-label="Excluir FO"
+            className="grid h-7 w-7 place-items-center rounded-full surface-2 text-muted ring-1 ring-line hover:text-fg"
+          >
+            <X size={12} />
+          </button>
+        ) : null}
       </div>
       <div
         className={cn(

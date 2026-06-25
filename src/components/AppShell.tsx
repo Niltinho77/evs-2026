@@ -1,23 +1,24 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   UserPlus,
-  Users,
   Sun,
   Moon,
   Menu,
   Search,
   X,
-  Command as CommandIcon,
   Shield,
+  LogOut,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTheme } from "./ThemeProvider";
 import { cn } from "./ui";
+import { useAuth } from "./AuthProvider";
 
 const CommandPalette = dynamic(() => import("./CommandPalette"), {
   ssr: false,
@@ -26,7 +27,7 @@ const CommandPalette = dynamic(() => import("./CommandPalette"), {
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/soldiers/new", label: "Novo militar", icon: UserPlus, exact: false },
+  { href: "/soldiers/new", label: "Novo militar", icon: UserPlus, exact: false, adminOnly: true },
 ];
 
 function isActive(pathname: string, href: string, exact: boolean) {
@@ -37,12 +38,22 @@ function isActive(pathname: string, href: string, exact: boolean) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
   const { theme, toggle } = useTheme();
+  const { user, isAdmin } = useAuth();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   // fecha drawer ao navegar
   React.useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
+
+  if (pathname === "/login") {
+    return <div className="min-h-screen text-fg">{children}</div>;
+  }
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/login";
+  }
 
   return (
     <div className="min-h-screen text-fg">
@@ -60,13 +71,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Menu size={18} />
           </button>
 
-          <a href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5">
             <Logo size={32} />
             <div className="leading-tight">
               <div className="text-sm font-bold tracking-tight">EVS 2026</div>
               <div className="text-[10px] text-muted">Esqd Comando</div>
             </div>
-          </a>
+          </Link>
 
           <button
             type="button"
@@ -98,13 +109,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="absolute inset-y-0 left-0 flex w-[80%] max-w-xs flex-col surface border-r border-line p-4"
             >
               <div className="flex items-center justify-between">
-                <a href="/" className="flex items-center gap-2.5">
+                <Link href="/" className="flex items-center gap-2.5">
                   <Logo size={36} />
                   <div className="leading-tight">
                     <div className="text-sm font-bold tracking-tight">EVS 2026</div>
                     <div className="text-[10px] text-muted">Esqd Comando</div>
                   </div>
-                </a>
+                </Link>
                 <button
                   onClick={() => setDrawerOpen(false)}
                   className="grid h-9 w-9 place-items-center rounded-[var(--r-md)] surface-2 ring-1 ring-line"
@@ -113,9 +124,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
 
-              <NavList pathname={pathname} className="mt-6" />
+              <NavList pathname={pathname} isAdmin={isAdmin} className="mt-6" />
 
               <div className="mt-auto pt-4">
+                <SessionRow label={user?.label} role={user?.role} onLogout={logout} />
+                <div className="mt-3" />
                 <ThemeRow theme={theme} onToggle={toggle} />
               </div>
             </motion.aside>
@@ -133,10 +146,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <NavList pathname={pathname} className="px-3" />
+        <NavList pathname={pathname} isAdmin={isAdmin} className="px-3" />
 
         <div className="mt-auto p-3">
           <SearchPrompt />
+          <div className="mt-3">
+            <SessionRow label={user?.label} role={user?.role} onLogout={logout} />
+          </div>
           <div className="mt-3">
             <ThemeRow theme={theme} onToggle={toggle} />
           </div>
@@ -170,18 +186,20 @@ function fakeOpenCommand() {
 
 function NavList({
   pathname,
+  isAdmin,
   className,
 }: {
   pathname: string;
+  isAdmin: boolean;
   className?: string;
 }) {
   return (
     <nav className={cn("flex flex-col gap-1", className)}>
-      {NAV.map((item) => {
+      {NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => {
         const active = isActive(pathname, item.href, item.exact);
         const Icon = item.icon;
         return (
-          <a
+          <Link
             key={item.href}
             href={item.href}
             className={cn(
@@ -200,7 +218,7 @@ function NavList({
             )}
             <Icon size={16} className={active ? "text-[rgb(var(--primary-strong))]" : ""} />
             <span>{item.label}</span>
-          </a>
+          </Link>
         );
       })}
     </nav>
@@ -242,6 +260,36 @@ function ThemeRow({
       </span>
       <span className="text-faint">trocar</span>
     </button>
+  );
+}
+
+function SessionRow({
+  label,
+  role,
+  onLogout,
+}: {
+  label?: string;
+  role?: string;
+  onLogout: () => void;
+}) {
+  return (
+    <div className="rounded-[var(--r-md)] surface-2 p-2.5 text-xs ring-1 ring-line">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate font-semibold text-fg">{label ?? "Usuario"}</div>
+          <div className="text-faint">{role === "admin" ? "Acesso completo" : "Acesso comum"}</div>
+        </div>
+        <button
+          type="button"
+          onClick={onLogout}
+          className="grid h-8 w-8 place-items-center rounded-[var(--r-md)] surface-3 text-muted ring-1 ring-line transition hover:text-fg"
+          aria-label="Sair"
+          title="Sair"
+        >
+          <LogOut size={14} />
+        </button>
+      </div>
+    </div>
   );
 }
 

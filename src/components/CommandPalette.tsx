@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { useAuth } from "./AuthProvider";
 
 type SoldierHit = {
   id: string;
@@ -23,9 +24,9 @@ type SoldierHit = {
 };
 
 const PLATOON_LABEL: Record<string, string> = {
-  P1: "1º Pelotão",
-  P2: "2º Pelotão",
-  P3: "3º Pelotão",
+  P1: "1o Pelotao",
+  P2: "2o Pelotao",
+  P3: "3o Pelotao",
 };
 
 export function CommandPalette() {
@@ -34,8 +35,8 @@ export function CommandPalette() {
   const [hits, setHits] = React.useState<SoldierHit[]>([]);
   const [loading, setLoading] = React.useState(false);
   const { theme, toggle } = useTheme();
+  const { isAdmin } = useAuth();
 
-  // ⌘K / Ctrl+K
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -47,7 +48,6 @@ export function CommandPalette() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // busca remota com debounce simples
   React.useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -59,13 +59,13 @@ export function CommandPalette() {
       }
       setLoading(true);
       try {
-        const res = await fetch(
-          `/api/soldiers?q=${encodeURIComponent(term)}`,
-          { cache: "no-store" },
-        );
+        const res = await fetch(`/api/soldiers?q=${encodeURIComponent(term)}`, {
+          cache: "no-store",
+        });
         const data = await res.json();
-        if (!cancelled)
+        if (!cancelled) {
           setHits(Array.isArray(data?.soldiers) ? data.soldiers.slice(0, 8) : []);
+        }
       } catch {
         if (!cancelled) setHits([]);
       } finally {
@@ -111,7 +111,7 @@ export function CommandPalette() {
                   <Search size={16} className="text-muted" />
                   <Command.Input
                     autoFocus
-                    placeholder="Buscar militar, abrir página, mudar tema…"
+                    placeholder="Buscar militar, abrir pagina, mudar tema..."
                     value={q}
                     onValueChange={setQ}
                     className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-faint"
@@ -121,7 +121,7 @@ export function CommandPalette() {
 
                 <Command.List className="max-h-[60vh] overflow-y-auto p-2">
                   <Command.Empty className="px-3 py-6 text-center text-xs text-muted">
-                    {loading ? "Buscando…" : "Nada encontrado."}
+                    {loading ? "Buscando..." : "Nada encontrado."}
                   </Command.Empty>
 
                   {hits.length > 0 && (
@@ -141,8 +141,8 @@ export function CommandPalette() {
                               {s.warName || s.fullName}
                             </div>
                             <div className="truncate text-[11px] text-muted">
-                              {s.fullName} ·{" "}
-                              {s.platoon ? PLATOON_LABEL[s.platoon] : "Sem pelotão"}
+                              {s.fullName} -{" "}
+                              {s.platoon ? PLATOON_LABEL[s.platoon] : "Sem pelotao"}
                             </div>
                           </div>
                         </Command.Item>
@@ -159,27 +159,29 @@ export function CommandPalette() {
                       <LayoutDashboard size={16} className="text-muted" />
                       <span>Ir para o Dashboard</span>
                     </Command.Item>
-                    <Command.Item
-                      value="novo militar cadastrar"
-                      onSelect={() => go("/soldiers/new")}
-                      className="cmdk-item"
-                    >
-                      <UserPlus size={16} className="text-muted" />
-                      <span>Novo militar</span>
-                    </Command.Item>
-                    <Command.Item
-                      value="exportar csv"
-                      onSelect={() =>
-                        go("/?export=1")
-                      }
-                      className="cmdk-item"
-                    >
-                      <FileDown size={16} className="text-muted" />
-                      <span>Abrir exportação CSV</span>
-                    </Command.Item>
+                    {isAdmin ? (
+                      <>
+                        <Command.Item
+                          value="novo militar cadastrar"
+                          onSelect={() => go("/soldiers/new")}
+                          className="cmdk-item"
+                        >
+                          <UserPlus size={16} className="text-muted" />
+                          <span>Novo militar</span>
+                        </Command.Item>
+                        <Command.Item
+                          value="exportar csv"
+                          onSelect={() => go("/?export=1")}
+                          className="cmdk-item"
+                        >
+                          <FileDown size={16} className="text-muted" />
+                          <span>Abrir exportacao CSV</span>
+                        </Command.Item>
+                      </>
+                    ) : null}
                   </Command.Group>
 
-                  <Command.Group heading="Aparência" className="cmdk-group">
+                  <Command.Group heading="Aparencia" className="cmdk-group">
                     <Command.Item
                       value="tema dark light claro escuro"
                       onSelect={() => {
