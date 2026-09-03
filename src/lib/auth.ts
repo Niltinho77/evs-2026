@@ -10,7 +10,7 @@ export const SESSION_COOKIE = "evs_session";
 
 const USERS: Record<string, { password: string; role: UserRole; label: string }> = {
   caveirinha: { password: "Brasil@2026", role: "common", label: "Caveirinha" },
-  admin: { password: "sgte", role: "admin", label: "Admin" },
+  sgte: { password: "1234", role: "admin", label: "Admin" },
 };
 
 function authSecret() {
